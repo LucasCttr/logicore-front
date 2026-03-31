@@ -1,10 +1,13 @@
 import React from 'react';
 import DriverList from '../../components/DriverList';
+import AuthGuard from '../../components/AuthGuard';
 
 export default function DriversPage() {
   return (
-    <main className="container mx-auto p-6">
-      <DriverList />
-    </main>
+    <AuthGuard>
+      <main className="container mx-auto p-6">
+        <DriverList />
+      </main>
+    </AuthGuard>
   );
 }
