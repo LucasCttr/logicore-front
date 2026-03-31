@@ -14,7 +14,10 @@ export async function login(payload: LoginUserDto): Promise<AuthResponseDto> {
     Password: (payload as any).password ?? (payload as any).Password,
   };
   const res = await api.post('/api/auth/login', body);
-  return res.data;
+  // backend wraps responses in Result<T>
+  const payloadRes = res.data;
+  if (!payloadRes?.isSuccess) throw new Error(payloadRes?.error ?? 'Login failed');
+  return payloadRes.value;
 }
 
 export default {};

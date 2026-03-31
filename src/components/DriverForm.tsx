@@ -56,41 +56,41 @@ export default function DriverForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg mx-auto p-4 bg-white rounded shadow">
-      <h2 className="text-lg font-semibold mb-4">New Driver</h2>
+      <h2 className="text-lg font-semibold mb-4 text-slate-900">New Driver</h2>
 
       <label className="block mb-2">
         <span className="text-sm text-gray-700">First name</span>
-        <input {...register('firstName')} className="mt-1 block w-full border rounded px-3 py-2" />
+        <input {...register('firstName')} autoComplete="given-name" className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
         {formState.errors.firstName && <p className="text-sm text-red-600 mt-1">{String(formState.errors.firstName.message)}</p>}
       </label>
 
       <label className="block mb-2">
         <span className="text-sm text-gray-700">Last name</span>
-        <input {...register('lastName')} className="mt-1 block w-full border rounded px-3 py-2" />
+        <input {...register('lastName')} autoComplete="family-name" className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
         {formState.errors.lastName && <p className="text-sm text-red-600 mt-1">{String(formState.errors.lastName.message)}</p>}
       </label>
 
       <label className="block mb-2">
         <span className="text-sm text-gray-700">Email</span>
-        <input {...register('email')} className="mt-1 block w-full border rounded px-3 py-2" />
+        <input {...register('email')} autoComplete="email" className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
         {formState.errors.email && <p className="text-sm text-red-600 mt-1">{String(formState.errors.email.message)}</p>}
       </label>
 
       <label className="block mb-2">
         <span className="text-sm text-gray-700">Password</span>
-        <input type="password" {...register('password')} className="mt-1 block w-full border rounded px-3 py-2" />
+        <input type="password" {...register('password')} autoComplete="new-password" className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
         {formState.errors.password && <p className="text-sm text-red-600 mt-1">{String(formState.errors.password.message)}</p>}
       </label>
 
       <label className="block mb-2">
         <span className="text-sm text-gray-700">License number</span>
-        <input {...register('licenseNumber')} className="mt-1 block w-full border rounded px-3 py-2" />
+        <input {...register('licenseNumber')} autoComplete="off" className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
         {formState.errors.licenseNumber && <p className="text-sm text-red-600 mt-1">{String(formState.errors.licenseNumber.message)}</p>}
       </label>
 
       <label className="block mb-2">
         <span className="text-sm text-gray-700">Phone</span>
-        <input {...register('phone')} className="mt-1 block w-full border rounded px-3 py-2" />
+        <input {...register('phone')} autoComplete="tel" className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
         {formState.errors.phone && <p className="text-sm text-red-600 mt-1">{String(formState.errors.phone.message)}</p>}
       </label>
 

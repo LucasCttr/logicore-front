@@ -11,20 +11,24 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    try {
+      const t = localStorage.getItem('token');
+      if (t) router.replace('/');
+    } catch (e) {
+      // ignore
+    }
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
       const res = await login({ email, password });
-      if (res && (res as any).token) {
-        localStorage.setItem('token', (res as any).token);
-        localStorage.setItem('user', JSON.stringify((res as any).user ?? {}));
-        router.replace('/');
-      } else if ((res as any).value && (res as any).value.token) {
-        // In case API returns a Result<T> wrapper with value
-        localStorage.setItem('token', (res as any).value.token);
-        localStorage.setItem('user', JSON.stringify((res as any).value.user ?? {}));
+      if (res && res.token) {
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('user', JSON.stringify(res.user ?? {}));
         router.replace('/');
       } else {
         setError('Respuesta inesperada del servidor');
@@ -41,9 +45,9 @@ export default function LoginPage() {
       <h1 className="text-2xl mb-4">Login</h1>
       <form onSubmit={handleSubmit} className="max-w-md">
         <label className="block">Email</label>
-        <input className="w-full border rounded px-3 py-2 mb-3" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input autoComplete="email" className="w-full border rounded px-3 py-2 mb-3 bg-white text-slate-900" value={email} onChange={(e) => setEmail(e.target.value)} />
         <label className="block">Password</label>
-        <input type="password" className="w-full border rounded px-3 py-2 mb-3" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <input type="password" autoComplete="current-password" className="w-full border rounded px-3 py-2 mb-3 bg-white text-slate-900" value={password} onChange={(e) => setPassword(e.target.value)} />
         {error && <div className="text-red-600 mb-2">{error}</div>}
         <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded" disabled={loading}>
           {loading ? 'Entrando...' : 'Entrar'}

@@ -30,9 +30,17 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" style={{ backgroundColor: '#ffffff' }}>
         <Header />
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <main className="flex-1 w-full">
+            <div className="container mx-auto px-6 py-4 max-w-7xl">
+              <div className="bg-white rounded-lg shadow p-0">
+                {children}
+              </div>
+            </div>
+          </main>
+        </QueryProvider>
       </body>
     </html>
   );
