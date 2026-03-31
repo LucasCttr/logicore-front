@@ -45,7 +45,8 @@ export function useUpdateDriverStatus() {
     mutationFn: ({ id, payload }) => updateDriverStatus(id, payload),
     onSuccess() {
       qc.invalidateQueries({ queryKey: ['drivers'] });
-      qc.invalidateQueries({ queryKey: ['driver'] });
+      // invalidate any driver detail queries (['driver', id])
+      qc.invalidateQueries({ predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'driver' });
     },
   });
 }

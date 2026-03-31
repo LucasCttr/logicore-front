@@ -3,30 +3,47 @@ import { Driver, RegisterDriverDto, UpdateDriverStatusDto } from '../types/drive
 
 export async function getDrivers(): Promise<Driver[]> {
   const res = await api.get('/api/drivers');
-  return res.data;
+  const payload: any = res.data;
+  return payload?.value ?? payload?.Value ?? payload;
 }
 
 export async function getDriverById(id: string): Promise<Driver> {
   const res = await api.get(`/api/drivers/${id}`);
-  return res.data;
+  const payload: any = res.data;
+  return payload?.value ?? payload?.Value ?? payload;
 }
 
 export async function getAvailableDrivers(): Promise<Driver[]> {
   const res = await api.get('/api/drivers/available');
-  return res.data;
+  const payload: any = res.data;
+  return payload?.value ?? payload?.Value ?? payload;
 }
 
 export async function getMyDriverProfile(): Promise<Driver> {
   const res = await api.get('/api/drivers/me');
-  return res.data;
+  const payload: any = res.data;
+  return payload?.value ?? payload?.Value ?? payload;
 }
 
 export async function registerDriver(payload: RegisterDriverDto): Promise<Driver> {
-  const res = await api.post('/api/drivers/register', payload);
-  return res.data;
+  // backend expects PascalCase property names for model binding
+  const body: any = {
+    FirstName: payload.firstName,
+    LastName: payload.lastName,
+    Email: payload.email,
+    Password: payload.password,
+    LicenseNumber: payload.licenseNumber,
+    Phone: payload.phone,
+  };
+  const res = await api.post('/api/drivers/register', body);
+  const result: any = res.data;
+  return result?.value ?? result?.Value ?? result;
 }
 
 export async function updateDriverStatus(id: string, payload: UpdateDriverStatusDto): Promise<Driver> {
-  const res = await api.put(`/api/drivers/${id}/status`, payload);
-  return res.data;
+  // backend expects PascalCase property `IsActive`
+  const body: any = { IsActive: payload.isActive };
+  const res = await api.put(`/api/drivers/${id}/status`, body);
+  const result: any = res.data;
+  return result?.value ?? result?.Value ?? result;
 }

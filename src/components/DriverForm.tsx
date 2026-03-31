@@ -19,8 +19,15 @@ export default function DriverForm() {
   });
 
   const onSubmit = async (data: RegisterDriverSchema) => {
-    // adapt types if necessary
-    const payload: RegisterDriverDto = { name: data.name, phone: data.phone ?? undefined };
+    // adapt types to API DTO
+    const payload: RegisterDriverDto = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      password: data.password,
+      licenseNumber: data.licenseNumber,
+      phone: data.phone ?? undefined,
+    };
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -52,9 +59,33 @@ export default function DriverForm() {
       <h2 className="text-lg font-semibold mb-4">New Driver</h2>
 
       <label className="block mb-2">
-        <span className="text-sm text-gray-700">Name</span>
-        <input {...register('name')} className="mt-1 block w-full border rounded px-3 py-2" />
-        {formState.errors.name && <p className="text-sm text-red-600 mt-1">{String(formState.errors.name.message)}</p>}
+        <span className="text-sm text-gray-700">First name</span>
+        <input {...register('firstName')} className="mt-1 block w-full border rounded px-3 py-2" />
+        {formState.errors.firstName && <p className="text-sm text-red-600 mt-1">{String(formState.errors.firstName.message)}</p>}
+      </label>
+
+      <label className="block mb-2">
+        <span className="text-sm text-gray-700">Last name</span>
+        <input {...register('lastName')} className="mt-1 block w-full border rounded px-3 py-2" />
+        {formState.errors.lastName && <p className="text-sm text-red-600 mt-1">{String(formState.errors.lastName.message)}</p>}
+      </label>
+
+      <label className="block mb-2">
+        <span className="text-sm text-gray-700">Email</span>
+        <input {...register('email')} className="mt-1 block w-full border rounded px-3 py-2" />
+        {formState.errors.email && <p className="text-sm text-red-600 mt-1">{String(formState.errors.email.message)}</p>}
+      </label>
+
+      <label className="block mb-2">
+        <span className="text-sm text-gray-700">Password</span>
+        <input type="password" {...register('password')} className="mt-1 block w-full border rounded px-3 py-2" />
+        {formState.errors.password && <p className="text-sm text-red-600 mt-1">{String(formState.errors.password.message)}</p>}
+      </label>
+
+      <label className="block mb-2">
+        <span className="text-sm text-gray-700">License number</span>
+        <input {...register('licenseNumber')} className="mt-1 block w-full border rounded px-3 py-2" />
+        {formState.errors.licenseNumber && <p className="text-sm text-red-600 mt-1">{String(formState.errors.licenseNumber.message)}</p>}
       </label>
 
       <label className="block mb-2">
