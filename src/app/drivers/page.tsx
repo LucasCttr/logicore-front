@@ -1,7 +1,5 @@
 import React from 'react';
-import dynamic from 'next/dynamic';
-
-const DriverList = dynamic(() => import('../../components/DriverList'), { ssr: false });
+import DriverList from '../../components/DriverList';
 
 export default function DriversPage() {
   return (
