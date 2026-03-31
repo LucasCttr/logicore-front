@@ -6,11 +6,11 @@ import { useDrivers } from '../hooks/useDrivers';
 export default function DriverList() {
   const { data, isLoading, isError, error, refetch } = useDrivers();
 
-  if (isLoading) return <div className="p-4">Cargando drivers...</div>;
+  if (isLoading) return <div className="p-4">Loading drivers...</div>;
   if (isError) return (
     <div className="p-4">
       <div>Error: {error?.message}</div>
-      <button onClick={() => refetch()} className="mt-2 px-3 py-1 bg-blue-600 text-white rounded">Reintentar</button>
+      <button onClick={() => refetch()} className="mt-2 px-3 py-1 bg-blue-600 text-white rounded">Retry</button>
     </div>
   );
 
@@ -18,7 +18,7 @@ export default function DriverList() {
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-3">Drivers</h2>
       {(!data || data.length === 0) ? (
-        <div>No hay drivers disponibles.</div>
+        <div>Not drivers available.</div>
       ) : (
         <ul className="space-y-2">
           {data.map((d) => (
