@@ -4,8 +4,8 @@ export type Package = {
   description?: string | null;
   weight?: number | null;
   status?: string | null;
-  originLocationId?: string | null;
-  destinationLocationId?: string | null;
+  origin?: string | null;
+  destination?: string | null;
   shipmentId?: string | null;
   createdAt?: string | null;
   [key: string]: any;
@@ -15,8 +15,8 @@ export type CreatePackageDto = {
   trackingNumber?: string;
   description?: string;
   weight?: number;
-  originLocationId?: string;
-  destinationLocationId?: string;
+  origin?: string;
+  destination?: string;
 };
 
 export type UpdatePackageDto = Partial<CreatePackageDto> & {

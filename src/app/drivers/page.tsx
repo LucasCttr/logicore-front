@@ -5,7 +5,7 @@ import AuthGuard from '../../components/AuthGuard';
 export default function DriversPage() {
   return (
     <AuthGuard>
-      <main className="container mx-auto p-1">
+      <main className="container mx-auto p-0">
         <DriverList />
       </main>
     </AuthGuard>

@@ -34,8 +34,8 @@ export default function RootLayout({
         <Header />
         <QueryProvider>
           <main className="flex-1 w-full">
-            <div className="container mx-auto px-6 py-4 max-w-7xl">
-              <div className="bg-white rounded-lg shadow p-0">
+            <div className="container mx-auto px-6 py-1 max-w-9xl">
+              <div className="bg-white rounded-lg p-0 h-[100vh] max-h-[90vh] overflow-y-auto">
                 {children}
               </div>
             </div>

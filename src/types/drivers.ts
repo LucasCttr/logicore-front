@@ -1,7 +1,7 @@
 export type Driver = {
   id: string;
   name: string;
-  phone?: string | null;
+  phone: string;
   licenseNumber?: string | null;
   isActive?: boolean | null;
   applicationUserId?: string | null;
@@ -14,7 +14,7 @@ export type RegisterDriverDto = {
   email: string;
   password: string;
   licenseNumber: string;
-  phone?: string;
+  phone: string;
 };
 
 export type UpdateDriverStatusDto = {
