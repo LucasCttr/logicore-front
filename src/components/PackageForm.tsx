@@ -182,11 +182,11 @@ export default function PackageForm() {
             />
 
             {originSuggestions.length > 0 && (
-              <ul className="absolute left-0 right-0 bg-white border rounded mt-1 max-h-40 overflow-auto z-10">
+              <ul className="absolute left-0 right-0 bg-white border rounded mt-1 max-h-40 overflow-auto z-10 text-slate-900">
                 {originSuggestions.map((s) => (
                   <li
                     key={s}
-                    className="px-3 py-2 hover:bg-slate-100 cursor-pointer text-sm"
+                    className="px-3 py-2 hover:bg-slate-100 cursor-pointer text-sm text-slate-900"
                     onClick={async () => {
                       setValue('origin', s as any, { shouldValidate: true, shouldDirty: true });
                       setOriginSuggestions([]);
@@ -232,11 +232,11 @@ export default function PackageForm() {
             />
 
             {destinationSuggestions.length > 0 && (
-              <ul className="absolute left-0 right-0 bg-white border rounded mt-1 max-h-40 overflow-auto z-10">
+              <ul className="absolute left-0 right-0 bg-white border rounded mt-1 max-h-40 overflow-auto z-10 text-slate-900">
                 {destinationSuggestions.map((s) => (
                   <li
                     key={s}
-                    className="px-3 py-2 hover:bg-slate-100 cursor-pointer text-sm"
+                    className="px-3 py-2 hover:bg-slate-100 cursor-pointer text-sm text-slate-900"
                     onClick={async () => {
                       setValue('destination', s as any, { shouldValidate: true, shouldDirty: true });
                       setDestinationSuggestions([]);

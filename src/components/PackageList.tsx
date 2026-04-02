@@ -33,8 +33,9 @@ export default function PackageList() {
           <table className="min-w-full border-collapse">
             <thead>
               <tr className="bg-blue-600 text-white">
-                <th className="text-left px-4 py-3">Package</th>
-                <th className="text-left px-4 py-3">Description</th>
+                <th className="text-left px-4 py-3">Tracking</th>
+                <th className="text-left px-4 py-3">Recipient</th>
+                <th className="text-left px-4 py-3">Destination</th>
                 <th className="text-left px-4 py-3">Status</th>
                 <th className="text-left px-4 py-3">Shipment</th>
                 <th className="text-right px-4 py-3">Actions</th>
@@ -42,20 +43,17 @@ export default function PackageList() {
             </thead>
             <tbody>
               {items.map((p, idx) => {
-                const title = p.description ?? p.trackingNumber ?? 'Sin descripción';
-                const initials = (p.trackingNumber ?? title).toString().split(' ').map((s: string) => s[0]).slice(0,2).join('').toUpperCase();
+                const title = p.trackingNumber ?? 'Sin descripción';
+                const destination = (p as any).recipient?.address ?? p.destination ?? '-';
+                const recipientName = (p as any).recipient?.name ?? '-';
+
                 return (
                   <tr key={p.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
                     <td className="px-4 py-4 align-middle">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">{initials}</div>
-                        <div>
-                          <div className="font-medium text-gray-800">{p.trackingNumber ?? title}</div>
-                          <div className="text-sm text-gray-500">{p.recipientName ?? ''}</div>
-                        </div>
-                      </div>
+                      <div className="font-medium text-gray-800">{title}</div>
                     </td>
-                    <td className="px-4 py-4 align-middle text-gray-600">{p.description ?? '-'}</td>
+                    <td className="px-4 py-4 align-middle text-gray-600">{recipientName}</td>
+                    <td className="px-4 py-4 align-middle text-gray-600">{destination}</td>
                     <td className="px-4 py-4 align-middle text-gray-600">{p.status ?? '-'}</td>
                     <td className="px-4 py-4 align-middle text-gray-600">{p.shipmentId ?? '-'}</td>
                     <td className="px-4 py-4 align-middle text-right">

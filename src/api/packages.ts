@@ -10,7 +10,13 @@ import type {
 
 export async function getPackages(page = 1, pageSize = 20): Promise<PagedResponse<Package>> {
   const res = await api.get('/api/packages', { params: { page, pageSize } });
-  return res.data;
+  const payload = res.data;
+  // Backend wraps responses in Result<T>
+  if (payload && typeof payload === 'object' && 'isSuccess' in payload) {
+    if (payload.isSuccess) return payload.value as PagedResponse<Package>;
+    throw new Error(payload.error || 'Failed to fetch packages');
+  }
+  return payload as PagedResponse<Package>;
 }
 
 export async function getPackageById(id: string): Promise<Package> {
