@@ -3,6 +3,7 @@ import { z } from 'zod';
 const createPackageSchema = z.object({
   trackingNumber: z.string().min(1, 'Tracking number is required'),
   description: z.string().optional().nullable(),
+  internalCode: z.string().max(100).optional().nullable(),
   weight: z.preprocess((v) => {
     if (v === '' || v === null || v === undefined) return undefined;
     const n = Number(v);

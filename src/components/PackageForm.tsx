@@ -19,9 +19,22 @@ export default function PackageForm() {
 
   const resolver = zodResolver(createPackageSchema) as Resolver<CreatePackageSchema>;
 
-  const { register, handleSubmit, formState, setValue } = useForm<CreatePackageSchema>({
+  const { register, handleSubmit, formState, setValue, watch } = useForm<CreatePackageSchema>({
     resolver,
   });
+
+  const [volumeCm3, setVolumeCm3] = useState<string>('');
+  const watchedLength = watch('lengthCm');
+  const watchedWidth = watch('widthCm');
+  const watchedHeight = watch('heightCm');
+
+  useEffect(() => {
+    const l = Number(watchedLength ?? 0);
+    const w = Number(watchedWidth ?? 0);
+    const h = Number(watchedHeight ?? 0);
+    if (l > 0 && w > 0 && h > 0) setVolumeCm3((l * w * h).toFixed(2));
+    else setVolumeCm3('');
+  }, [watchedLength, watchedWidth, watchedHeight]);
 
   // Autocomplete state for origin and destination
   const [originSuggestions, setOriginSuggestions] = useState<string[]>([]);
@@ -35,6 +48,7 @@ export default function PackageForm() {
     const payload: CreatePackageDto = {
       trackingNumber: data.trackingNumber,
       description: data.description ?? undefined,
+        internalCode: data.internalCode ?? undefined,
       weight: data.weight ?? undefined,
       origin: data.origin ?? undefined,
       destination: data.destination ?? undefined,
@@ -90,6 +104,12 @@ export default function PackageForm() {
         <span className="text-sm text-gray-700">Description</span>
         <input {...register('description')} className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
         {formState.errors.description && <p className="text-sm text-red-600 mt-1">{String(formState.errors.description.message)}</p>}
+      </label>
+
+      <label className="block mb-2">
+        <span className="text-sm text-gray-700">Internal Code / SKU</span>
+        <input {...register('internalCode')} className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
+        {formState.errors.internalCode && <p className="text-sm text-red-600 mt-1">{String(formState.errors.internalCode.message)}</p>}
       </label>
 
       <label className="block mb-2">
@@ -154,6 +174,12 @@ export default function PackageForm() {
             <input type="number" step="any" {...register('heightCm')} className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
           </label>
         </div>
+            <div className="mt-2">
+              <label className="block mb-2">
+                <span className="text-sm text-gray-700">Volume (cm³)</span>
+                <input value={volumeCm3} readOnly className="mt-1 block w-full border rounded px-3 py-2 bg-gray-100 text-slate-900" />
+              </label>
+            </div>
       </fieldset>
 
       <div className="grid grid-cols-2 gap-4">

@@ -14,6 +14,7 @@ export type Package = {
 export type CreatePackageDto = {
   trackingNumber?: string;
   description?: string;
+  internalCode?: string;
   weight?: number;
   origin?: string;
   destination?: string;
