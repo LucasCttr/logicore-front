@@ -5,6 +5,32 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { usePackages, useDeliverPackage, useCancelPackage } from '../hooks/usePackages';
 
+const getStatusLabel = (status: any) => {
+  if (status === null || status === undefined) return '-';
+  // status may be numeric (0..3) or string; normalize
+  const asNumber = typeof status === 'number' ? status : Number(status as any);
+  if (!Number.isNaN(asNumber)) {
+    switch (asNumber) {
+      case 0:
+        return 'Pending';
+      case 1:
+        return 'In Transit';
+      case 2:
+        return 'Delivered';
+      case 3:
+        return 'Canceled';
+      case 4:
+        return 'At Depot';
+      case 5:
+        return 'Delivered (Center)';
+      default:
+        return String(status);
+    }
+  }
+  // fallback: return raw string
+  return String(status);
+};
+
 export default function PackageList() {
   const { data, isLoading, error } = usePackages(1, 20);
   const deliver = useDeliverPackage();
@@ -37,7 +63,6 @@ export default function PackageList() {
                 <th className="text-left px-4 py-3">Recipient</th>
                 <th className="text-left px-4 py-3">Destination</th>
                 <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">Shipment</th>
                 <th className="text-right px-4 py-3">Actions</th>
               </tr>
             </thead>
@@ -54,8 +79,7 @@ export default function PackageList() {
                     </td>
                     <td className="px-4 py-4 align-middle text-gray-600">{recipientName}</td>
                     <td className="px-4 py-4 align-middle text-gray-600">{destination}</td>
-                    <td className="px-4 py-4 align-middle text-gray-600">{p.status ?? '-'}</td>
-                    <td className="px-4 py-4 align-middle text-gray-600">{p.shipmentId ?? '-'}</td>
+                    <td className="px-4 py-4 align-middle text-gray-600">{getStatusLabel(p.status)}</td>
                     <td className="px-4 py-4 align-middle text-right">
                       <button onClick={() => router.push(`/packages/${p.id}`)} className="px-3 py-1 mr-2 border border-blue-300 text-blue-600 rounded">View</button>
                       <button

@@ -23,18 +23,7 @@ export default function PackageForm() {
     resolver,
   });
 
-  const [volumeCm3, setVolumeCm3] = useState<string>('');
-  const watchedLength = watch('lengthCm');
-  const watchedWidth = watch('widthCm');
-  const watchedHeight = watch('heightCm');
-
-  useEffect(() => {
-    const l = Number(watchedLength ?? 0);
-    const w = Number(watchedWidth ?? 0);
-    const h = Number(watchedHeight ?? 0);
-    if (l > 0 && w > 0 && h > 0) setVolumeCm3((l * w * h).toFixed(2));
-    else setVolumeCm3('');
-  }, [watchedLength, watchedWidth, watchedHeight]);
+  // dimensions are submitted; volume is computed server-side (no client state needed)
 
   // Autocomplete state for origin and destination
   const [originSuggestions, setOriginSuggestions] = useState<string[]>([]);
@@ -174,12 +163,7 @@ export default function PackageForm() {
             <input type="number" step="any" {...register('heightCm')} className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
           </label>
         </div>
-            <div className="mt-2">
-              <label className="block mb-2">
-                <span className="text-sm text-gray-700">Volume (cm³)</span>
-                <input value={volumeCm3} readOnly className="mt-1 block w-full border rounded px-3 py-2 bg-gray-100 text-slate-900" />
-              </label>
-            </div>
+            {/* Volume is computed server-side from dimensions; omitted from form */}
       </fieldset>
 
       <div className="grid grid-cols-2 gap-4">

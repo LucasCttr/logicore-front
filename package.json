@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "dev:railway": "RAILWAY_URL=${RAILWAY_URL:-https://logicore-production-cf18.up.railway.app} && NEXT_PUBLIC_API_URL=\"$RAILWAY_URL\" npm run dev",
+    "start:railway": "RAILWAY_URL=${RAILWAY_URL:-https://logicore-production-cf18.up.railway.app} && NEXT_PUBLIC_API_URL=\"$RAILWAY_URL\" npm run build && NEXT_PUBLIC_API_URL=\"$RAILWAY_URL\" npm run start"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
