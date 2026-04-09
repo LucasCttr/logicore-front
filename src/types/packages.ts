@@ -12,27 +12,27 @@ export type Package = {
 };
 
 export type CreatePackageDto = {
-  trackingNumber?: string;
-  description?: string;
-  internalCode?: string;
-  weight?: number;
-  origin?: string;
-  destination?: string;
+  trackingNumber: string;
+  description: string;
+  internalCode: string;
+  weight: number;
+  origin: string;
+  destination: string;
 
-  // Recipient fields (optional)
-  recipientName?: string;
-  recipientAddress?: string;
-  recipientPhone?: string;
-  recipientFloorApartment?: string;
-  recipientCity?: string;
-  recipientProvince?: string;
-  recipientPostalCode?: string;
-  recipientDni?: string;
+  // Recipient fields
+  recipientName: string;
+  recipientAddress: string;
+  recipientPhone: string;
+  recipientFloorApartment: string;
+  recipientCity: string;
+  recipientProvince: string;
+  recipientPostalCode: string;
+  recipientDni: string;
 
-  // Dimensions (optional, cm)
-  lengthCm?: number;
-  widthCm?: number;
-  heightCm?: number;
+  // Dimensions (cm)
+  lengthCm: number;
+  widthCm: number;
+  heightCm: number;
 };
 
 

@@ -36,22 +36,22 @@ export default function PackageForm() {
   const onSubmit = async (data: CreatePackageSchema) => {
     const payload: CreatePackageDto = {
       trackingNumber: data.trackingNumber,
-      description: data.description ?? undefined,
-        internalCode: data.internalCode ?? undefined,
-      weight: data.weight ?? undefined,
-      origin: data.origin ?? undefined,
-      destination: data.destination ?? undefined,
-      recipientName: data.recipientName ?? undefined,
-      recipientAddress: data.recipientAddress ?? undefined,
-      recipientPhone: data.recipientPhone ?? undefined,
-      recipientFloorApartment: data.recipientFloorApartment ?? undefined,
-      recipientCity: data.recipientCity ?? undefined,
-      recipientProvince: data.recipientProvince ?? undefined,
-      recipientPostalCode: data.recipientPostalCode ?? undefined,
-      recipientDni: data.recipientDni ?? undefined,
-      lengthCm: data.lengthCm ?? undefined,
-      widthCm: data.widthCm ?? undefined,
-      heightCm: data.heightCm ?? undefined,
+      description: data.description,
+      internalCode: data.internalCode,
+      weight: data.weight,
+      origin: data.origin,
+      destination: data.destination,
+      recipientName: data.recipientName,
+      recipientAddress: data.recipientAddress,
+      recipientPhone: data.recipientPhone,
+      recipientFloorApartment: data.recipientFloorApartment,
+      recipientCity: data.recipientCity,
+      recipientProvince: data.recipientProvince,
+      recipientPostalCode: data.recipientPostalCode,
+      recipientDni: data.recipientDni,
+      lengthCm: data.lengthCm,
+      widthCm: data.widthCm,
+      heightCm: data.heightCm,
     };
 
     setSubmitting(true);
@@ -108,7 +108,7 @@ export default function PackageForm() {
       </label>
 
       <fieldset className="border-t pt-4">
-        <legend className="text-sm font-medium text-gray-700 mb-2">Recipient (optional)</legend>
+        <legend className="text-sm font-medium text-gray-700 mb-2">Recipient</legend>
         <label className="block mb-2">
           <span className="text-sm text-gray-700">Name</span>
           <input {...register('recipientName')} className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
@@ -148,7 +148,7 @@ export default function PackageForm() {
       </fieldset>
 
       <fieldset className="border-t pt-4">
-        <legend className="text-sm font-medium text-gray-700 mb-2">Dimensions (cm, optional)</legend>
+        <legend className="text-sm font-medium text-gray-700 mb-2">Dimensions (cm)</legend>
         <div className="grid grid-cols-3 gap-4">
           <label className="block mb-2">
             <span className="text-sm text-gray-700">Length</span>

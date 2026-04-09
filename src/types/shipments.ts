@@ -3,13 +3,16 @@ export type Shipment = {
   reference?: string | null;
   status?: string | null;
   driverId?: string | null;
+  vehicleId?: string | null;
   createdAt?: string | null;
   [key: string]: any;
 };
 
 export type CreateShipmentDto = {
-  reference?: string;
-  // other fields as needed
+  driverId: string;
+  vehicleId: string;
+  packageIds: string[];
+  estimatedDelivery: string; // ISO date string
 };
 
 export type AssignDriverDto = {

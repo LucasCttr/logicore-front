@@ -34,7 +34,7 @@ export default function DriverList() {
         <Link href="/drivers/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow">New Driver</Link>
       </div>
 
-      {(!data || data.length === 0) ? (
+      {(!data || !data.items || data.items.length === 0) ? (
         <div className="text-gray-500">No drivers available.</div>
       ) : (
         <div className="overflow-x-auto">
@@ -48,7 +48,7 @@ export default function DriverList() {
               </tr>
             </thead>
             <tbody>
-              {data.map((d, idx) => {
+              {data.items.map((d, idx) => {
                 const name = d.name ?? d.fullName ?? 'Sin nombre';
                 const initials = name.split(' ').map((s: string) => s[0]).slice(0,2).join('').toUpperCase();
                 return (
