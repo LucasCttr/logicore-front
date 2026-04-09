@@ -1,9 +1,11 @@
 "use client";
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useShipments } from '../hooks/useShipments';
 
 export default function ShipmentList() {
+  const router = useRouter();
   const { data, isLoading, error } = useShipments(1, 20);
 
   if (isLoading) return <div>Loading shipments...</div>;
@@ -13,9 +15,17 @@ export default function ShipmentList() {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-3">Shipments</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Shipments</h2>
+        <button
+          onClick={() => router.push('/shipments/new')}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          + New Shipment
+        </button>
+      </div>
       {items.length === 0 ? (
-        <div>No hay shipments.</div>
+        <div>No shipments yet.</div>
       ) : (
         <table className="min-w-full bg-white border">
           <thead>

@@ -38,6 +38,7 @@ export default function Header() {
     { href: '/drivers', label: 'Drivers' },
     { href: '/packages', label: 'Packages' },
     { href: '/shipments', label: 'Shipments' },
+    { href: '/vehicles', label: 'Vehicles' },
     { href: '/locations', label: 'Locations' },
   ];
 

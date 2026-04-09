@@ -3,11 +3,13 @@ export type Package = {
   trackingNumber?: string | null;
   description?: string | null;
   weight?: number | null;
-  status?: string | null;
+  status?: number | string | null;
   origin?: string | null;
   destination?: string | null;
   shipmentId?: string | null;
   createdAt?: string | null;
+  originAddress?: string | null;
+  destinationAddress?: string | null;
   [key: string]: any;
 };
 

@@ -4,6 +4,7 @@ export type Shipment = {
   status?: string | null;
   driverId?: string | null;
   vehicleId?: string | null;
+  destinationLocationId?: number | null;
   createdAt?: string | null;
   [key: string]: any;
 };
@@ -13,6 +14,7 @@ export type CreateShipmentDto = {
   vehicleId: string;
   packageIds: string[];
   estimatedDelivery: string; // ISO date string
+  destinationLocationId?: number | null; // NULL = last-mile (door-to-door), number = depot-to-depot
 };
 
 export type AssignDriverDto = {

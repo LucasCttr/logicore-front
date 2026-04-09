@@ -15,7 +15,7 @@ export default function LocationList() {
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-3">Locations</h2>
       {items.length === 0 ? (
-        <div>No hay locations.</div>
+        <div>No locations yet.</div>
       ) : (
         <ul className="space-y-2">
           {items.map((l) => (
