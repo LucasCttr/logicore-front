@@ -3,53 +3,52 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useShipments } from '../hooks/useShipments';
+import ListContainer from './ListContainer';
 
 export default function ShipmentList() {
   const router = useRouter();
   const { data, isLoading, error } = useShipments(1, 20);
 
-  if (isLoading) return <div>Loading shipments...</div>;
-  if (error) return <div className="text-red-600">{error.message}</div>;
-
   const items = data?.items ?? [];
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Shipments</h2>
+    <ListContainer
+      title="Shipments"
+      isLoading={isLoading}
+      error={error?.message ?? null}
+      isEmpty={items.length === 0}
+      emptyMessage="No shipments yet."
+      actions={
         <button
           onClick={() => router.push('/shipments/new')}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           + New Shipment
         </button>
-      </div>
-      {items.length === 0 ? (
-        <div>No shipments yet.</div>
-      ) : (
-        <table className="min-w-full bg-white border">
-          <thead>
-            <tr>
-              <th className="px-3 py-2 text-left">ID</th>
-              <th className="px-3 py-2 text-left">Reference</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Driver</th>
-              <th className="px-3 py-2 text-left">Created</th>
+      }
+    >
+      <table className="w-full">
+        <thead>
+          <tr className="bg-gray-50 border-b">
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Reference</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Driver</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((s, idx) => (
+            <tr key={s.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+              <td className="px-6 py-4 text-sm text-gray-900">{s.id}</td>
+              <td className="px-6 py-4 text-sm text-gray-900">{s.reference ?? '-'}</td>
+              <td className="px-6 py-4 text-sm text-gray-900">{s.status ?? '-'}</td>
+              <td className="px-6 py-4 text-sm text-gray-900">{s.driverId ?? '-'}</td>
+              <td className="px-6 py-4 text-sm text-gray-900">{s.createdAt ?? '-'}</td>
             </tr>
-          </thead>
-          <tbody>
-            {items.map((s) => (
-              <tr key={s.id} className="border-t">
-                <td className="px-3 py-2">{s.id}</td>
-                <td className="px-3 py-2">{s.reference ?? '-'}</td>
-                <td className="px-3 py-2">{s.status ?? '-'}</td>
-                <td className="px-3 py-2">{s.driverId ?? '-'}</td>
-                <td className="px-3 py-2">{s.createdAt ?? '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+          ))}
+        </tbody>
+      </table>
+    </ListContainer>
   );
 }

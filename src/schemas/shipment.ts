@@ -8,7 +8,6 @@ const createShipmentSchema = z.object({
     (date) => new Date(date) > new Date(),
     'Estimated delivery must be in the future'
   ),
-  shipmentType: z.enum(['depot-to-depot', 'last-mile']).default('last-mile'),
   destinationLocationId: z.string().optional(),
 });
 

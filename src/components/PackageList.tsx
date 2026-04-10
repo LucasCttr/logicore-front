@@ -4,10 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { usePackages, useDeliverPackage, useCancelPackage } from '../hooks/usePackages';
+import ListContainer from './ListContainer';
 
 const getStatusLabel = (status: any) => {
   if (status === null || status === undefined) return '-';
-  // status may be numeric (0..3) or string; normalize
   const asNumber = typeof status === 'number' ? status : Number(status as any);
   if (!Number.isNaN(asNumber)) {
     switch (asNumber) {
@@ -27,7 +27,6 @@ const getStatusLabel = (status: any) => {
         return String(status);
     }
   }
-  // fallback: return raw string
   return String(status);
 };
 
@@ -40,91 +39,93 @@ export default function PackageList() {
   const [savingCancelId, setSavingCancelId] = React.useState<string | null>(null);
   const [actionError, setActionError] = React.useState<string | null>(null);
 
-  if (isLoading) return <div className="p-4">Loading packages...</div>;
-  if (error) return <div className="p-4 text-red-600">{error.message}</div>;
-
   const items = data?.items ?? [];
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-700">Packages</h2>
-        <Link href="/packages/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow">New Package</Link>
-      </div>
+    <>
+      <ListContainer
+        title="Packages"
+        isLoading={isLoading}
+        error={error?.message ?? null}
+        isEmpty={items.length === 0}
+        emptyMessage="No packages available."
+        actions={
+          <Link href="/packages/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
+            + New Package
+          </Link>
+        }
+      >
+        <table className="w-full">
+          <thead>
+            <tr className="bg-gray-50 border-b">
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Tracking</th>
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Recipient</th>
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Destination</th>
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
+              <th className="text-right px-6 py-3 text-sm font-semibold text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((p, idx) => {
+              const title = p.trackingNumber ?? 'Sin descripción';
+              const destination = (p as any).recipient?.address ?? p.destination ?? '-';
+              const recipientName = (p as any).recipient?.name ?? '-';
 
-      {items.length === 0 ? (
-        <div className="text-gray-500">No packages available.</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse">
-            <thead>
-              <tr className="bg-blue-600 text-white">
-                <th className="text-left px-4 py-3">Tracking</th>
-                <th className="text-left px-4 py-3">Recipient</th>
-                <th className="text-left px-4 py-3">Destination</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-right px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((p, idx) => {
-                const title = p.trackingNumber ?? 'Sin descripción';
-                const destination = (p as any).recipient?.address ?? p.destination ?? '-';
-                const recipientName = (p as any).recipient?.name ?? '-';
-
-                return (
-                  <tr key={p.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
-                    <td className="px-4 py-4 align-middle">
-                      <div className="font-medium text-gray-800">{title}</div>
-                    </td>
-                    <td className="px-4 py-4 align-middle text-gray-600">{recipientName}</td>
-                    <td className="px-4 py-4 align-middle text-gray-600">{destination}</td>
-                    <td className="px-4 py-4 align-middle text-gray-600">{getStatusLabel(p.status)}</td>
-                    <td className="px-4 py-4 align-middle text-right">
-                      <button onClick={() => router.push(`/packages/${p.id}`)} className="px-3 py-1 mr-2 border border-blue-300 text-blue-600 rounded">View</button>
-                      <button
-                        onClick={async () => {
-                          setActionError(null);
-                          setSavingDeliverId(p.id);
-                          try {
-                            await deliver.mutateAsync(p.id);
-                          } catch (err: any) {
-                            setActionError(err?.message ?? 'Error');
-                          } finally {
-                            setSavingDeliverId(null);
-                          }
-                        }}
-                        disabled={savingDeliverId === p.id}
-                        className="px-3 py-1 mr-2 bg-green-600 text-white rounded"
-                      >
-                        {savingDeliverId === p.id ? '...' : 'Deliver'}
-                      </button>
-                      <button
-                        onClick={async () => {
-                          setActionError(null);
-                          setSavingCancelId(p.id);
-                          try {
-                            await cancel.mutateAsync(p.id);
-                          } catch (err: any) {
-                            setActionError(err?.message ?? 'Error');
-                          } finally {
-                            setSavingCancelId(null);
-                          }
-                        }}
-                        disabled={savingCancelId === p.id}
-                        className="px-3 py-1 rounded bg-rose-600 text-white"
-                      >
-                        {savingCancelId === p.id ? '...' : 'Cancel'}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {actionError && <div className="text-red-600 mt-2">{actionError}</div>}
-    </div>
+              return (
+                <tr key={p.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+                  <td className="px-6 py-4 font-medium text-gray-800">{title}</td>
+                  <td className="px-6 py-4 text-gray-600">{recipientName}</td>
+                  <td className="px-6 py-4 text-gray-600">{destination}</td>
+                  <td className="px-6 py-4 text-gray-600">{getStatusLabel(p.status)}</td>
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button
+                      onClick={() => router.push(`/packages/${p.id}`)}
+                      className="px-3 py-1 border border-blue-300 text-blue-600 rounded hover:bg-blue-50 text-sm"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setActionError(null);
+                        setSavingDeliverId(p.id);
+                        try {
+                          await deliver.mutateAsync(p.id);
+                        } catch (err: any) {
+                          setActionError(err?.message ?? 'Error');
+                        } finally {
+                          setSavingDeliverId(null);
+                        }
+                      }}
+                      disabled={savingDeliverId === p.id}
+                      className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {savingDeliverId === p.id ? '...' : 'Deliver'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setActionError(null);
+                        setSavingCancelId(p.id);
+                        try {
+                          await cancel.mutateAsync(p.id);
+                        } catch (err: any) {
+                          setActionError(err?.message ?? 'Error');
+                        } finally {
+                          setSavingCancelId(null);
+                        }
+                      }}
+                      disabled={savingCancelId === p.id}
+                      className="px-3 py-1 rounded bg-rose-600 text-white hover:bg-rose-700 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {savingCancelId === p.id ? '...' : 'Cancel'}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </ListContainer>
+      {actionError && <div className="text-red-600 mt-4 p-3 bg-red-50 rounded">{actionError}</div>}
+    </>
   );
 }

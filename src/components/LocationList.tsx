@@ -2,30 +2,37 @@
 
 import React from 'react';
 import { useLocations } from '../hooks/useLocations';
+import ListContainer from './ListContainer';
 
 export default function LocationList() {
   const { data, isLoading, error } = useLocations();
 
-  if (isLoading) return <div>Loading locations...</div>;
-  if (error) return <div className="text-red-600">{error.message}</div>;
-
   const items = data ?? [];
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold mb-3">Locations</h2>
-      {items.length === 0 ? (
-        <div>No locations yet.</div>
-      ) : (
-        <ul className="space-y-2">
-          {items.map((l) => (
-            <li key={l.id} className="border p-2 rounded">
-              <div className="font-medium">{l.name}</div>
-              <div className="text-sm text-gray-600">{l.address ?? '-'}</div>
-            </li>
+    <ListContainer
+      title="Locations"
+      isLoading={isLoading}
+      error={error?.message ?? null}
+      isEmpty={items.length === 0}
+      emptyMessage="No locations available."
+    >
+      <table className="w-full">
+        <thead>
+          <tr className="bg-gray-50 border-b">
+            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Name</th>
+            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Address</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((l, idx) => (
+            <tr key={l.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+              <td className="px-6 py-4 font-medium text-gray-800">{l.name}</td>
+              <td className="px-6 py-4 text-gray-600">{l.address ?? '-'}</td>
+            </tr>
           ))}
-        </ul>
-      )}
-    </div>
+        </tbody>
+      </table>
+    </ListContainer>
   );
 }

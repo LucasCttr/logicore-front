@@ -11,6 +11,7 @@ import { useDrivers } from '../hooks/useDrivers';
 import { useLocations } from '../hooks/useLocations';
 
 import type { CreateShipmentDto } from '../types/shipments';
+import type { LocationDto } from '../types/locations';
 import { useRouter } from 'next/navigation';
 import { useVehicles } from '../hooks/useVehicles';
 
@@ -35,7 +36,6 @@ export default function ShipmentForm() {
       driverId: '',
       vehicleId: '',
       estimatedDelivery: '',
-      shipmentType: 'last-mile',
       destinationLocationId: '',
     },
   });
@@ -136,7 +136,7 @@ export default function ShipmentForm() {
   const packages = packagesData?.items?.filter(p => Number(p.status) === 0) ?? [];
   const drivers = driversData?.items ?? [];
   const vehicles = vehiclesData?.items ?? [];
-  const locations = locationsData?.items ?? [];
+  const locations = Array.isArray(locationsData) ? locationsData : [];
   const commonDestination = getCommonDestination();
 
   return (
@@ -218,8 +218,6 @@ export default function ShipmentForm() {
         </div>
       </div>
 
-      {submitError && <div className="text-sm text-red-600 mb-4 p-3 bg-red-50 rounded">{submitError}</div>}
-
       {/* Destination Suggestion */}
       {selectedPackages.size > 0 && commonDestination && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
@@ -240,7 +238,6 @@ export default function ShipmentForm() {
         </div>
       )}
 
-      {submitError && <div className="text-sm text-red-600 mb-4 p-3 bg-red-50 rounded">{submitError}</div>}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
@@ -352,7 +349,7 @@ export default function ShipmentForm() {
                     defaultValue=""
                   >
                     <option value="">Select a destination location...</option>
-                    {locations.map(location => (
+                    {locations.map((location: LocationDto) => (
                       <option key={location.id} value={location.id}>
                         {location.name} - {location.address}
                       </option>
