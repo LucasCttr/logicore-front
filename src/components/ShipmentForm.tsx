@@ -30,8 +30,9 @@ export default function ShipmentForm() {
   const [shipmentType, setShipmentType] = useState<'depot-to-depot' | 'last-mile'>('last-mile');
 
   const resolver = zodResolver(createShipmentSchema) as Resolver<CreateShipmentSchema>;
-  const { register, handleSubmit, formState } = useForm<CreateShipmentSchema>({
+  const { register, handleSubmit, formState, watch } = useForm<CreateShipmentSchema>({
     resolver,
+    mode: 'onBlur', // Validate on blur to avoid constant errors
     defaultValues: {
       driverId: '',
       vehicleId: '',
@@ -39,6 +40,9 @@ export default function ShipmentForm() {
       destinationLocationId: '',
     },
   });
+
+  // Watch form values for debugging
+  const formValues = watch();
 
   // Toggle package selection
   const togglePackage = (packageId: string) => {
@@ -63,28 +67,54 @@ export default function ShipmentForm() {
 
   // Handle form submission from modal
   const onSubmit = async (data: CreateShipmentSchema) => {
-    const payload: CreateShipmentDto = {
-      driverId: data.driverId,
-      vehicleId: data.vehicleId,
-      packageIds: Array.from(selectedPackages),
-      estimatedDelivery: new Date(data.estimatedDelivery).toISOString(),
-      destinationLocationId: shipmentType === 'depot-to-depot' && data.destinationLocationId 
-        ? parseInt(data.destinationLocationId) 
-        : null,
-    };
-
-    setSubmitting(true);
-    setSubmitError(null);
+    console.log('Form data received:', data);
+    console.log('Form errors:', formState.errors);
+    
     try {
+      // Validate packages are selected
+      if (selectedPackages.size === 0) {
+        setSubmitError('Please select at least one package');
+        return;
+      }
+
+      // Validate date is in future
+      const deliveryDate = new Date(data.estimatedDelivery);
+      if (isNaN(deliveryDate.getTime())) {
+        setSubmitError('Invalid date format. Please select a valid date.');
+        return;
+      }
+      
+      if (deliveryDate <= new Date()) {
+        setSubmitError('Estimated delivery must be in the future.');
+        return;
+      }
+
+      const payload: CreateShipmentDto = {
+        driverId: data.driverId,
+        vehicleId: data.vehicleId,
+        packageIds: Array.from(selectedPackages),
+        estimatedDelivery: deliveryDate.toISOString(),
+        destinationLocationId: shipmentType === 'depot-to-depot' && data.destinationLocationId 
+          ? parseInt(data.destinationLocationId) 
+          : null,
+      };
+
+      console.log('Shipment payload:', payload);
+
+      setSubmitting(true);
+      setSubmitError(null);
+      
       if (mutation.mutateAsync) {
         await mutation.mutateAsync(payload);
       } else {
         await new Promise<void>((resolve, reject) => {
           mutation.mutate(payload, {
             onSuccess() {
+              console.log('Shipment created successfully');
               resolve();
             },
-            onError(err) {
+            onError(err: any) {
+              console.error('Mutation error:', err);
               reject(err);
             },
           });
@@ -95,8 +125,9 @@ export default function ShipmentForm() {
       setShowModal(false);
       router.push('/shipments');
     } catch (err: any) {
-      setSubmitError(err?.message ?? 'Error creating shipment');
-    } finally {
+      console.error('Submission error:', err);
+      const errorMessage = err?.response?.data?.message || err?.message || 'Error creating shipment';
+      setSubmitError(errorMessage);
       setSubmitting(false);
     }
   };
@@ -289,9 +320,27 @@ export default function ShipmentForm() {
               </div>
             </div>
 
+            {submitError && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+                <p className="font-semibold">Error:</p>
+                <p>{submitError}</p>
+              </div>
+            )}
+
+            {Object.keys(formState.errors).length > 0 && (
+              <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded text-sm">
+                <p className="font-semibold">Validation Errors:</p>
+                <ul className="list-disc list-inside mt-2">
+                  {Object.entries(formState.errors).map(([field, error]: any) => (
+                    <li key={field}>{field}: {error?.message || 'Invalid'}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <label className="block">
-                <span className="text-sm text-gray-700 font-medium">Driver</span>
+                <span className="text-sm text-gray-700 font-medium">Driver *</span>
                 <select
                   {...register('driverId')}
                   className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900"
@@ -310,7 +359,7 @@ export default function ShipmentForm() {
               </label>
 
               <label className="block">
-                <span className="text-sm text-gray-700 font-medium">Vehicle</span>
+                <span className="text-sm text-gray-700 font-medium">Vehicle *</span>
                 <select
                   {...register('vehicleId')}
                   className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900"
@@ -329,7 +378,7 @@ export default function ShipmentForm() {
               </label>
 
               <label className="block">
-                <span className="text-sm text-gray-700 font-medium">Estimated Delivery Date</span>
+                <span className="text-sm text-gray-700 font-medium">Estimated Delivery Date *</span>
                 <input
                   type="datetime-local"
                   {...register('estimatedDelivery')}
@@ -349,11 +398,16 @@ export default function ShipmentForm() {
                     defaultValue=""
                   >
                     <option value="">Select a destination location...</option>
-                    {locations.map((location: LocationDto) => (
-                      <option key={location.id} value={location.id}>
-                        {location.name} - {location.address}
-                      </option>
-                    ))}
+                    {locations.map((location: LocationDto) => {
+                      const address = [location.addressLine1, location.city, location.postalCode]
+                        .filter(Boolean)
+                        .join(', ');
+                      return (
+                        <option key={location.id} value={location.id}>
+                          {location.name} - {address}
+                        </option>
+                      );
+                    })}
                   </select>
                   {formState.errors.destinationLocationId && (
                     <p className="text-sm text-red-600 mt-1">{String(formState.errors.destinationLocationId.message)}</p>
@@ -371,10 +425,16 @@ export default function ShipmentForm() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || Object.keys(formState.errors).length > 0}
+                  onClick={() => {
+                    console.log('Submit button clicked');
+                    console.log('Form values:', formValues);
+                    console.log('Form errors:', formState.errors);
+                  }}
                   className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400 hover:bg-blue-700 transition"
+                  title={Object.keys(formState.errors).length > 0 ? 'Please fix validation errors' : ''}
                 >
-                  {submitting ? 'Creating...' : 'Create Shipment'}
+                  {submitting ? 'Creating...' : Object.keys(formState.errors).length > 0 ? '❌ Fix Errors' : 'Create Shipment'}
                 </button>
               </div>
             </form>

@@ -1,11 +1,18 @@
 export type Shipment = {
   id: string;
-  reference?: string | null;
-  status?: string | null;
+  routeCode?: string | null;
+  status?: number | string | null;
   driverId?: string | null;
   vehicleId?: string | null;
   destinationLocationId?: number | null;
   createdAt?: string | null;
+  estimatedDelivery?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+  arrivedAt?: string | null;
+  vehicleMaxWeightCapacity?: number | null;
+  vehicleMaxVolumeCapacity?: number | null;
+  packageIds?: string[] | null;
   [key: string]: any;
 };
 

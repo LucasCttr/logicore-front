@@ -30,6 +30,30 @@ const getStatusLabel = (status: any) => {
   return String(status);
 };
 
+const getStatusBadgeClass = (status: any) => {
+  if (status === null || status === undefined) return 'bg-gray-100 text-gray-800';
+  const asNumber = typeof status === 'number' ? status : Number(status as any);
+  if (!Number.isNaN(asNumber)) {
+    switch (asNumber) {
+      case 0:
+        return 'bg-yellow-100 text-yellow-800';
+      case 1:
+        return 'bg-blue-100 text-blue-800';
+      case 2:
+        return 'bg-green-100 text-green-800';
+      case 3:
+        return 'bg-red-100 text-red-800';
+      case 4:
+        return 'bg-orange-100 text-orange-800';
+      case 5:
+        return 'bg-emerald-100 text-emerald-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
+  return 'bg-gray-100 text-gray-800';
+};
+
 export default function PackageList() {
   const { data, isLoading, error } = usePackages(1, 20);
   const deliver = useDeliverPackage();
@@ -76,7 +100,11 @@ export default function PackageList() {
                   <td className="px-6 py-4 font-medium text-gray-800">{title}</td>
                   <td className="px-6 py-4 text-gray-600">{recipientName}</td>
                   <td className="px-6 py-4 text-gray-600">{destination}</td>
-                  <td className="px-6 py-4 text-gray-600">{getStatusLabel(p.status)}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded text-xs font-medium ${getStatusBadgeClass(p.status)}`}>
+                      {getStatusLabel(p.status)}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 text-right space-x-2">
                     <button
                       onClick={() => router.push(`/packages/${p.id}`)}
