@@ -1,13 +1,29 @@
-import DriverDetail from '@/src/components/DriverDetail';
+'use client';
+
 import React from 'react';
+import { useParams } from 'next/navigation';
+import DriverDetail from '@/src/components/DriverDetail';
+import AuthGuard from '@/src/components/AuthGuard';
 
+export default function DriverPage() {
+  const params = useParams();
+  const id = params?.id as string;
 
-type Props = { params: { id: string } };
+  if (!id) {
+    return (
+      <AuthGuard>
+        <main className="container mx-auto p-6">
+          <div className="text-red-600">Invalid driver ID</div>
+        </main>
+      </AuthGuard>
+    );
+  }
 
-export default function DriverPage({ params }: Props) {
   return (
-    <main className="container mx-auto p-6">
-      <DriverDetail id={params.id} />
-    </main>
+    <AuthGuard>
+      <main className="container mx-auto p-6">
+        <DriverDetail id={id} />
+      </main>
+    </AuthGuard>
   );
 }

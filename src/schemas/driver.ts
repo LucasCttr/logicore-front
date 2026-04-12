@@ -11,4 +11,14 @@ export const registerDriverSchema = z.object({
 
 export type RegisterDriverSchema = z.infer<typeof registerDriverSchema>;
 
+export const editDriverSchema = z.object({
+  firstName: z.string().min(1, { message: 'Name is required' }),
+  lastName: z.string().min(1, { message: 'Last name is required' }),
+  email: z.string().email({ message: 'Invalid email' }),
+  licenseNumber: z.string().min(1, { message: 'License number is required' }),
+  phone: z.string().min(1, { message: 'Phone is required' }),
+});
+
+export type EditDriverSchema = z.infer<typeof editDriverSchema>;
+
 export default registerDriverSchema;

@@ -41,6 +41,7 @@ export default function DriverList() {
             <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Driver</th>
             <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">License</th>
             <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Phone</th>
+            <th className="text-left px-7 py-3 text-sm font-semibold text-gray-700">Status</th>
             <th className="text-right px-6 py-3 text-sm font-semibold text-gray-700">Actions</th>
           </tr>
         </thead>
@@ -49,7 +50,7 @@ export default function DriverList() {
             const name = d.name ?? d.fullName ?? 'Sin nombre';
             const initials = name.split(' ').map((s: string) => s[0]).slice(0, 2).join('').toUpperCase();
             return (
-              <tr key={d.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+              <tr key={d.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm">{initials}</div>
@@ -61,10 +62,12 @@ export default function DriverList() {
                 </td>
                 <td className="px-6 py-4 text-gray-600">{d.licenseNumber ?? '-'}</td>
                 <td className="px-6 py-4 text-gray-600">{d.phone ?? '-'}</td>
-                <td className="px-6 py-4 text-right space-x-2">
-                  <span className={`text-sm font-medium ${d.isActive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                <td className="px-6 py-4">
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${d.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
                     {d.isActive ? 'Active' : 'Inactive'}
                   </span>
+                </td>
+                <td className="px-6 py-4 text-right space-x-2">
                   <button
                     onClick={() => router.push(`/drivers/${d.id}`)}
                     className="px-3 py-1 border border-blue-300 text-blue-600 rounded hover:bg-blue-50 text-sm"

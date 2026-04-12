@@ -5,8 +5,9 @@ import {
   getMyDriverProfile,
   registerDriver,
   updateDriverStatus,
+  updateDriver,
 } from '../api/drivers';
-import type { Driver, RegisterDriverDto, UpdateDriverStatusDto } from '../types/drivers';
+import type { Driver, RegisterDriverDto, UpdateDriverStatusDto, UpdateDriverDto } from '../types/drivers';
 
 export function useDriver(id: string) {
   return useQuery<Driver, Error>({
@@ -47,6 +48,17 @@ export function useUpdateDriverStatus() {
       qc.invalidateQueries({ queryKey: ['drivers'] });
       // invalidate any driver detail queries (['driver', id])
       qc.invalidateQueries({ predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'driver' });
+    },
+  });
+}
+
+export function useUpdateDriver() {
+  const qc = useQueryClient();
+  return useMutation<Driver, Error, { id: string; payload: UpdateDriverDto }>({
+    mutationFn: ({ id, payload }) => updateDriver(id, payload),
+    onSuccess(data) {
+      qc.invalidateQueries({ queryKey: ['drivers'] });
+      qc.setQueryData(['driver', data.id], data);
     },
   });
 }

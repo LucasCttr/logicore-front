@@ -47,3 +47,17 @@ export async function updateDriverStatus(id: string, payload: UpdateDriverStatus
   const result: any = res.data;
   return result?.value ?? result?.Value ?? result;
 }
+
+export async function updateDriver(id: string, payload: any): Promise<Driver> {
+  // backend expects PascalCase property names for model binding
+  const body: any = {
+    FirstName: payload.firstName,
+    LastName: payload.lastName,
+    Email: payload.email,
+    LicenseNumber: payload.licenseNumber,
+    Phone: payload.phone,
+  };
+  const res = await api.put(`/api/drivers/${id}`, body);
+  const result: any = res.data;
+  return result?.value ?? result?.Value ?? result;
+}

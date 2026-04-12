@@ -21,4 +21,12 @@ export type UpdateDriverStatusDto = {
   isActive: boolean;
 };
 
+export type UpdateDriverDto = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  licenseNumber: string;
+  phone: string;
+};
+
 export default Driver;
