@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const createPackageSchema = z.object({
-  trackingNumber: z.string().min(1, 'Tracking number is required'),
+  trackingNumber: z.string().optional(), // Auto-generated on backend
   description: z.string().min(1, 'Description is required'),
   internalCode: z.string().min(1, 'Internal code is required').max(100, 'Internal code max 100 characters'),
   weight: z.preprocess((v) => {

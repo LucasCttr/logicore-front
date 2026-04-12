@@ -35,7 +35,8 @@ export default function PackageForm() {
 
   const onSubmit = async (data: CreatePackageSchema) => {
     const payload: CreatePackageDto = {
-      trackingNumber: data.trackingNumber,
+      // Tracking number is auto-generated on backend if not provided
+      ...(data.trackingNumber && { trackingNumber: data.trackingNumber }),
       description: data.description,
       internalCode: data.internalCode,
       weight: data.weight,
@@ -82,12 +83,6 @@ export default function PackageForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg mx-auto p-4 bg-white rounded border border-gray-300 shadow">
       <h2 className="text-lg font-semibold mb-4 text-slate-900">New Package</h2>
-
-      <label className="block mb-2">
-        <span className="text-sm text-gray-700">Tracking number</span>
-        <input {...register('trackingNumber')} autoComplete="off" className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
-        {formState.errors.trackingNumber && <p className="text-sm text-red-600 mt-1">{String(formState.errors.trackingNumber.message)}</p>}
-      </label>
 
       <label className="block mb-2">
         <span className="text-sm text-gray-700">Description</span>

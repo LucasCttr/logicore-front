@@ -14,7 +14,7 @@ export type Package = {
 };
 
 export type CreatePackageDto = {
-  trackingNumber: string;
+  trackingNumber?: string; // Auto-generated on backend if not provided
   description: string;
   internalCode: string;
   weight: number;

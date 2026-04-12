@@ -140,7 +140,10 @@ export default function ShipmentForm() {
       0: 'Pending',
       1: 'In Transit',
       2: 'Delivered',
-      3: 'Canceled'
+      3: 'Canceled',
+      4: 'At Depot',
+      5: 'Delivered to Center',
+      6: 'Returned'
     };
     return statusMap[Number(status)] || 'Unknown';
   };
@@ -163,8 +166,8 @@ export default function ShipmentForm() {
     return allSame ? firstDestination : null;
   };
 
-  // Filter packages to show only pending ones (status: 0)
-  const packages = packagesData?.items?.filter(p => Number(p.status) === 0) ?? [];
+  // Filter packages to show only AtDepot ones (status: 4)
+  const packages = packagesData?.items?.filter(p => Number(p.status) === 4) ?? [];
   const drivers = driversData?.items ?? [];
   const vehicles = vehiclesData?.items ?? [];
   const locations = Array.isArray(locationsData) ? locationsData : [];

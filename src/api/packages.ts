@@ -21,35 +21,80 @@ export async function getPackages(page = 1, pageSize = 20): Promise<PagedRespons
 
 export async function getPackageById(id: string): Promise<Package> {
   const res = await api.get(`/api/packages/${id}`);
-  return res.data;
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as Package;
+    throw new Error(res.data.error || 'Failed to fetch package');
+  }
+  return res.data as Package;
 }
 
 export async function createPackage(payload: CreatePackageDto): Promise<Package> {
   const res = await api.post('/api/packages', payload);
-  return res.data;
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as Package;
+    throw new Error(res.data.error || 'Failed to create package');
+  }
+  return res.data as Package;
 }
 
 export async function updatePackage(id: string, payload: UpdatePackageDto): Promise<Package> {
   const res = await api.put(`/api/packages/${id}`, payload);
-  return res.data;
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as Package;
+    throw new Error(res.data.error || 'Failed to update package');
+  }
+  return res.data as Package;
 }
 
 export async function deliverPackage(id: string): Promise<Package> {
   const res = await api.post(`/api/packages/${id}/deliver`);
-  return res.data;
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as Package;
+    throw new Error(res.data.error || 'Failed to deliver package');
+  }
+  return res.data as Package;
 }
 
 export async function cancelPackage(id: string): Promise<Package> {
   const res = await api.post(`/api/packages/${id}/cancel`);
-  return res.data;
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as Package;
+    throw new Error(res.data.error || 'Failed to cancel package');
+  }
+  return res.data as Package;
+}
+
+export async function movePackageToDepot(id: string): Promise<boolean> {
+  const res = await api.post(`/api/packages/${id}/move-to-depot`);
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as boolean;
+    throw new Error(res.data.error || 'Failed to move package to depot');
+  }
+  return res.data as boolean;
 }
 
 export async function getPackageByTracking(trackingNumber: string): Promise<PackagePublicHistoryDto | null> {
   const res = await api.get(`/api/packages/tracking/${trackingNumber}`);
-  return res.data;
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as PackagePublicHistoryDto;
+    throw new Error(res.data.error || 'Failed to fetch package');
+  }
+  return res.data as PackagePublicHistoryDto;
 }
 
 export async function getPackageHistory(id: string): Promise<PackageInternalHistoryDto[]> {
   const res = await api.get(`/api/packages/${id}/history`);
-  return res.data;
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as PackageInternalHistoryDto[];
+    throw new Error(res.data.error || 'Failed to fetch history');
+  }
+  return res.data as PackageInternalHistoryDto[];
 }
