@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { usePackages, useDeliverPackage, useCancelPackage } from '../hooks/usePackages';
+import { usePackages, useCancelPackage } from '../hooks/usePackages';
 import ListContainer from './ListContainer';
 
 const getStatusLabel = (status: any) => {
@@ -56,12 +56,9 @@ const getStatusBadgeClass = (status: any) => {
 
 export default function PackageList() {
   const { data, isLoading, error } = usePackages(1, 20);
-  const deliver = useDeliverPackage();
   const cancel = useCancelPackage();
   const router = useRouter();
-  const [savingDeliverId, setSavingDeliverId] = React.useState<string | null>(null);
   const [savingCancelId, setSavingCancelId] = React.useState<string | null>(null);
-  const [actionError, setActionError] = React.useState<string | null>(null);
 
   const items = data?.items ?? [];
 
@@ -114,29 +111,11 @@ export default function PackageList() {
                     </button>
                     <button
                       onClick={async () => {
-                        setActionError(null);
-                        setSavingDeliverId(p.id);
-                        try {
-                          await deliver.mutateAsync(p.id);
-                        } catch (err: any) {
-                          setActionError(err?.message ?? 'Error');
-                        } finally {
-                          setSavingDeliverId(null);
-                        }
-                      }}
-                      disabled={savingDeliverId === p.id}
-                      className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      {savingDeliverId === p.id ? '...' : 'Deliver'}
-                    </button>
-                    <button
-                      onClick={async () => {
-                        setActionError(null);
                         setSavingCancelId(p.id);
                         try {
                           await cancel.mutateAsync(p.id);
                         } catch (err: any) {
-                          setActionError(err?.message ?? 'Error');
+                          console.error(err?.message ?? 'Error');
                         } finally {
                           setSavingCancelId(null);
                         }
@@ -153,7 +132,6 @@ export default function PackageList() {
           </tbody>
         </table>
       </ListContainer>
-      {actionError && <div className="text-red-600 mt-4 p-3 bg-red-50 rounded">{actionError}</div>}
     </>
   );
 }

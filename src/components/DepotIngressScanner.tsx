@@ -185,7 +185,7 @@ export default function DepotIngressScanner() {
   };
 
   return (
-    <div className="w-full bg-gradient-to-b from-blue-50 to-gray-50 p-4 md:p-8">
+    <div className="w-full to-gray-50 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">

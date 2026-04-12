@@ -102,8 +102,8 @@ export default function PackageForm() {
         {formState.errors.weight && <p className="text-sm text-red-600 mt-1">{String(formState.errors.weight.message)}</p>}
       </label>
 
-      <fieldset className="border-t pt-4">
-        <legend className="text-sm font-medium text-gray-700 mb-2">Recipient</legend>
+      <fieldset className="border-t">
+        <legend className="text-base font-medium text-gray-700 mb-2 mt-4">Recipient</legend>
         <label className="block mb-2">
           <span className="text-sm text-gray-700">Name</span>
           <input {...register('recipientName')} className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
@@ -142,8 +142,8 @@ export default function PackageForm() {
         </label>
       </fieldset>
 
-      <fieldset className="border-t pt-4">
-        <legend className="text-sm font-medium text-gray-700 mb-2">Dimensions (cm)</legend>
+      <fieldset className="border-t">
+        <legend className="text-base font-medium text-gray-700 mb-2 mt-4">Dimensions (cm)</legend>
         <div className="grid grid-cols-3 gap-4">
           <label className="block mb-2">
             <span className="text-sm text-gray-700">Length</span>
