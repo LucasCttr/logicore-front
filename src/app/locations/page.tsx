@@ -10,15 +10,13 @@ export default function LocationsPage() {
 
   return (
     <AuthGuard>
-      <main className="container mx-auto p-6">
-        {showForm && (
-          <div className="mb-6">
-            <LocationForm onSuccess={() => setShowForm(false)} />
-          </div>
-        )}
+      {showForm && (
+        <div className="mb-6 px-6">
+          <LocationForm onSuccess={() => setShowForm(false)} />
+        </div>
+      )}
 
-        <LocationList onAddClick={() => setShowForm(!showForm)} isFormOpen={showForm} />
-      </main>
+      <LocationList onAddClick={() => setShowForm(!showForm)} isFormOpen={showForm} />
     </AuthGuard>
   );
 }

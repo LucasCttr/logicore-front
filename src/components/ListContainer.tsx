@@ -1,11 +1,20 @@
 "use client";
 
 import React from 'react';
+import Pagination from './Pagination';
+
+interface PaginationConfig {
+  currentPage: number;
+  totalPages: number;
+  totalItems?: number;
+  itemsPerPage?: number;
+  onPageChange: (page: number) => void;
+}
 
 interface ListContainerProps {
-  title: string;
   children: React.ReactNode;
-  actions?: React.ReactNode;
+  filters?: React.ReactNode;
+  pagination?: PaginationConfig;
   isLoading?: boolean;
   error?: string | null;
   isEmpty?: boolean;
@@ -13,9 +22,9 @@ interface ListContainerProps {
 }
 
 export default function ListContainer({
-  title,
   children,
-  actions,
+  filters,
+  pagination,
   isLoading,
   error,
   isEmpty,
@@ -40,26 +49,19 @@ export default function ListContainer({
   if (isEmpty) {
     return (
       <div className="w-full bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">{title}</h2>
-          {actions && <div>{actions}</div>}
-        </div>
+        {filters && <div className="mb-6">{filters}</div>}
         <div className="text-gray-500">{emptyMessage}</div>
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-white rounded-lg shadow overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold text-gray-800">{title}</h2>
-          {actions && <div>{actions}</div>}
-        </div>
-      </div>
-      <div className="overflow-x-auto">
+    <div className="w-full bg-white rounded-lg shadow overflow-hidden flex flex-col">
+      {filters && filters}
+      <div className="overflow-x-auto flex-1">
         {children}
       </div>
+      {pagination && <Pagination {...pagination} />}
     </div>
   );
 }

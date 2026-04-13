@@ -12,18 +12,14 @@ export default function PackagePage() {
   if (!id) {
     return (
       <AuthGuard>
-        <main className="container mx-auto p-6">
-          <div className="text-red-600">Invalid package ID</div>
-        </main>
+        <div className="text-red-600">Invalid package ID</div>
       </AuthGuard>
     );
   }
 
   return (
     <AuthGuard>
-      <main className="container mx-auto p-6">
-        <PackageDetail id={id} />
-      </main>
+      <PackageDetail id={id} />
     </AuthGuard>
   );
 }

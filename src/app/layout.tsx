@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from './providers/QueryProvider';
-import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
+import SectionHeader from '../components/SectionHeader';
 import React from 'react';
 
 const geistSans = Geist({
@@ -28,16 +29,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-screen antialiased`}
     >
-      <body className="min-h-full flex flex-col" style={{ backgroundColor: '#ffffff' }}>
-        <Header />
+      <body className="h-screen flex flex-row overflow-hidden" style={{ backgroundColor: '#ffffff' }}>
+        <Sidebar />
         <QueryProvider>
-          <main className="flex-1 w-full">
-            <div className="container mx-auto px-6 py-1 max-w-9xl">
-              <div className="bg-white rounded-lg p-0 h-[100vh] max-h-[90vh] overflow-y-auto">
-                {children}
-              </div>
+          <main className="flex-1 w-full h-full flex flex-col overflow-hidden">
+            <SectionHeader />
+            <div className="flex-1 w-full overflow-auto">
+              {children}
             </div>
           </main>
         </QueryProvider>

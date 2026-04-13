@@ -1,16 +1,21 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUpdateDriverStatus } from '../hooks/useDriver';
 import { useDrivers } from '../hooks/useDrivers';
 import ListContainer from './ListContainer';
+import FilterDrivers from './FilterDrivers';
 
 export default function DriverList() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
   const { data, isLoading, isError, error, refetch } = useDrivers();
   const router = useRouter();
   const update = useUpdateDriverStatus();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   const handleToggleActive = async (id: string, current?: boolean) => {
     try {
@@ -20,19 +25,68 @@ export default function DriverList() {
     }
   };
 
-  const items = data?.items ?? [];
+  let items = data?.items ?? [];
+
+  // Aplicar filtros
+  items = items.filter((item: any) => {
+    // Filtro de búsqueda
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = 
+      (item.name?.toLowerCase() || '').includes(searchLower) ||
+      (item.fullName?.toLowerCase() || '').includes(searchLower) ||
+      (item.email?.toLowerCase() || '').includes(searchLower) ||
+      (item.phone?.toLowerCase() || '').includes(searchLower);
+
+    // Filtro de estado
+    const matchesStatus = 
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && item.isActive) ||
+      (statusFilter === 'inactive' && !item.isActive);
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // Calcular paginación
+  const totalPages = Math.ceil(items.length / itemsPerPage);
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = startIdx + itemsPerPage;
+  const paginatedItems = items.slice(startIdx, endIdx);
+
+  // Reset a página 1 cuando cambian filtros o itemsPerPage
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, itemsPerPage]);
+
+  const newButton = (
+    <Link href="/drivers/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded whitespace-nowrap">
+      + New Driver
+    </Link>
+  );
 
   return (
     <ListContainer
-      title="Drivers"
+      filters={
+        <FilterDrivers
+          onSearch={setSearchQuery}
+          onStatusFilter={setStatusFilter}
+          onItemsPerPageChange={setItemsPerPage}
+          newButton={newButton}
+        />
+      }
       isLoading={isLoading}
       error={isError ? error?.message ?? 'Error loading drivers' : null}
       isEmpty={items.length === 0}
       emptyMessage="No drivers available."
-      actions={
-        <Link href="/drivers/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
-          + New Driver
-        </Link>
+      pagination={
+        items.length > 0
+          ? {
+              currentPage,
+              totalPages,
+              totalItems: items.length,
+              itemsPerPage: itemsPerPage,
+              onPageChange: setCurrentPage,
+            }
+          : undefined
       }
     >
       <table className="w-full">
@@ -46,8 +100,8 @@ export default function DriverList() {
           </tr>
         </thead>
         <tbody>
-          {items.map((d, idx) => {
-            const name = d.name ?? d.fullName ?? 'Sin nombre';
+          {paginatedItems.map((d, idx) => {
+            const name = d.name ?? d.fullName ?? 'No name';
             const initials = name.split(' ').map((s: string) => s[0]).slice(0, 2).join('').toUpperCase();
             return (
               <tr key={d.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`}>

@@ -55,7 +55,7 @@ export default function DriverForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg mx-auto p-4 bg-white rounded border border-gray-300 shadow">
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg mx-auto p-4 bg-white rounded border border-gray-300 shadow mt-4">
       <h2 className="text-lg font-semibold mb-4 text-slate-900">New Driver</h2>
 
       <label className="block mb-2">

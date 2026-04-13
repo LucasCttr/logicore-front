@@ -78,7 +78,7 @@ export default function DriverDetail({ id }: Props) {
     }
   };
 
-  const driverName = driver.name || `${driver.firstName || ''} ${driver.lastName || ''}`.trim() || 'Sin nombre';
+  const driverName = driver.name || `${driver.firstName || ''} ${driver.lastName || ''}`.trim() || 'No name';
 
   return (
     <div className="max-w-3xl mx-auto">

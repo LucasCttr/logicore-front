@@ -1,31 +1,82 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useShipments } from '../hooks/useShipments';
 import ListContainer from './ListContainer';
+import FilterShipments from './FilterShipments';
 
 export default function ShipmentList() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(14);
   const router = useRouter();
-  const { data, isLoading, error } = useShipments(1, 20);
+  const { data, isLoading, error } = useShipments(currentPage, itemsPerPage);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
 
-  const items = data?.items ?? [];
+  let items = data?.items ?? [];
+  const totalItems = (data as any)?.totalCount ?? items.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  // Aplicar filtros
+  items = items.filter((item: any) => {
+    // Filtro de búsqueda
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = 
+      (item.routeCode?.toLowerCase() || '').includes(searchLower) ||
+      (item.destination?.toLowerCase() || '').includes(searchLower);
+
+    // Filtro de estado
+    const matchesStatus = 
+      !statusFilter ||
+      (statusFilter === 'pending' && item.status === 0) ||
+      (statusFilter === 'in_transit' && item.status === 1) ||
+      (statusFilter === 'completed' && item.status === 2);
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // Reset a página 1 cuando cambian filtros o itemsPerPage
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, itemsPerPage]);
+
+  const newButton = (
+    <button
+      onClick={() => router.push('/shipments/new')}
+      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
+    >
+      + New Shipment
+    </button>
+  );
 
   return (
     <ListContainer
-      title="Shipments"
+      filters={
+        <FilterShipments
+          onSearch={setSearchQuery}
+          onStatusFilter={setStatusFilter}
+          onDateFilter={(start, end) => {
+            if (start) setDateStart(start);
+            if (end) setDateEnd(end);
+          }}
+          onItemsPerPageChange={setItemsPerPage}
+          newButton={newButton}
+        />
+      }
       isLoading={isLoading}
       error={error?.message ?? null}
       isEmpty={items.length === 0}
       emptyMessage="No shipments yet."
-      actions={
-        <button
-          onClick={() => router.push('/shipments/new')}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          + New Shipment
-        </button>
-      }
+      pagination={{
+        currentPage,
+        totalPages,
+        totalItems,
+        itemsPerPage: itemsPerPage,
+        onPageChange: setCurrentPage,
+      }}
     >
       <table className="w-full">
         <thead>

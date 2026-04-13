@@ -12,18 +12,14 @@ export default function DriverPage() {
   if (!id) {
     return (
       <AuthGuard>
-        <main className="container mx-auto p-6">
-          <div className="text-red-600">Invalid driver ID</div>
-        </main>
+        <div className="text-red-600">Invalid driver ID</div>
       </AuthGuard>
     );
   }
 
   return (
     <AuthGuard>
-      <main className="container mx-auto p-6">
-        <DriverDetail id={id} />
-      </main>
+      <DriverDetail id={id} />
     </AuthGuard>
   );
 }
