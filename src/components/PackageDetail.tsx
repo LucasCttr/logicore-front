@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { usePackage, useUpdatePackage, usePackageHistory, useDeliverPackage, useCancelPackage } from '../hooks/usePackages';
+import { usePackage, useUpdatePackage, usePackageHistory } from '../hooks/usePackages';
 import { editPackageSchema, type EditPackageSchema } from '../schemas/editPackage';
+import { ShipmentType } from '../types/packages';
 
 type Props = { id: string };
 
@@ -61,13 +62,8 @@ export default function PackageDetail({ id }: Props) {
   const { data, isLoading, error } = usePackage(id);
   const { data: history } = usePackageHistory(id);
   const updatePackage = useUpdatePackage();
-  const deliver = useDeliverPackage();
-  const cancel = useCancelPackage();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [savingDeliver, setSavingDeliver] = React.useState(false);
-  const [savingCancel, setSavingCancel] = React.useState(false);
-  const [actionError, setActionError] = React.useState<string | null>(null);
 
   const { register, handleSubmit, formState, reset } = useForm<EditPackageSchema>({
     resolver: zodResolver(editPackageSchema) as any,
@@ -116,25 +112,25 @@ export default function PackageDetail({ id }: Props) {
   const statusBadgeClass = getStatusBadgeClass(pkg.status);
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="mx-auto p-6 pt-4">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-3xl font-light text-gray-900">Package {pkg.trackingNumber || 'N/A'}</h1>
+        <div className="flex items-center gap-2">
           <Link 
             href="/packages"
-            className="text-blue-600 hover:text-blue-700 text-sm mb-2 inline-block"
+            className="px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
           >
             ← Back
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Package {pkg.trackingNumber || 'N/A'}</h1>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center gap-2"
+            disabled={isEditing}
+          >
+            ✏️ Edit
+          </button>
         </div>
-        <button
-          onClick={() => setIsEditing(true)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center gap-2"
-          disabled={isEditing}
-        >
-          ✏️ Edit
-        </button>
       </div>
 
       {/* Edit Mode */}
@@ -347,161 +343,158 @@ export default function PackageDetail({ id }: Props) {
         </form>
       ) : null}
 
-      {/* View Mode */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-900">Package Information</h2>
+      {/* View Mode - Two Column Layout */}
+      <div className="grid grid-cols-5 gap-6 mb-6">
+        {/* Left Column - Package Details */}
+        <div className="col-span-3 space-y-6">
+          {/* Package Information */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Package Information</h2>
 
-        <div className="grid grid-cols-2 gap-6 mb-6">
-          <div>
-            <p className="text-sm text-gray-700 font-medium">Tracking Number</p>
-            <p className="text-lg text-gray-900">{pkg.trackingNumber || '-'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-700 font-medium">Description</p>
-            <p className="text-lg text-gray-900">{pkg.description || '-'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-700 font-medium">Weight</p>
-            <p className="text-lg text-gray-900">{pkg.weight ? `${pkg.weight} kg` : '-'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-700 font-medium">Internal Code</p>
-            <p className="text-lg text-gray-900">{(pkg as any).internalCode || '-'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-700 font-medium">Origin</p>
-            <p className="text-lg text-gray-900">{pkg.originAddress || '-'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-700 font-medium">Destination</p>
-            <p className="text-lg text-gray-900">{pkg.destinationAddress || '-'}</p>
-          </div>
-        </div>
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div>
+                <p className="text-sm text-gray-700 font-medium">Tracking Number</p>
+                <p className="text-lg text-gray-900">{pkg.trackingNumber || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-700 font-medium">Description</p>
+                <p className="text-lg text-gray-900">{pkg.description || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-700 font-medium">Weight</p>
+                <p className="text-lg text-gray-900">{pkg.weight ? `${pkg.weight} kg` : '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-700 font-medium">Internal Code</p>
+                <p className="text-lg text-gray-900">{(pkg as any).internalCode || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-700 font-medium">Origin</p>
+                <p className="text-lg text-gray-900">{pkg.originAddress || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-700 font-medium">Destination</p>
+                <p className="text-lg text-gray-900">{pkg.destinationAddress || '-'}</p>
+              </div>
+            </div>
 
-        <div className="border-t pt-6 mb-6">
-          <h3 className="font-semibold mb-4 text-gray-900">Status</h3>
-          <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${statusBadgeClass}`}>
-            {statusLabel}
-          </span>
-        </div>
-
-        {(pkg as any).recipient && (
-          <div className="border-t pt-6 mb-6">
-            <h3 className="font-semibold mb-4 text-gray-900">Recipient Information</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-700 font-medium">Name</p>
-                <p className="text-gray-900">{(pkg as any).recipient.name || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium">DNI</p>
-                <p className="text-gray-900">{(pkg as any).recipient.dni || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium">Phone</p>
-                <p className="text-gray-900">{(pkg as any).recipient.phone || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium">Address</p>
-                <p className="text-gray-900">{(pkg as any).recipient.address || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium">Floor/Apartment</p>
-                <p className="text-gray-900">{(pkg as any).recipient.floorApartment || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium">City</p>
-                <p className="text-gray-900">{(pkg as any).recipient.city || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium">Province</p>
-                <p className="text-gray-900">{(pkg as any).recipient.province || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium">Postal Code</p>
-                <p className="text-gray-900">{(pkg as any).recipient.postalCode || '-'}</p>
+            <div className="border-t pt-6">
+              <h3 className="font-semibold mb-4 text-gray-900">Status</h3>
+              <div className="space-y-3">
+                <div>
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${statusBadgeClass}`}>
+                    {statusLabel}
+                  </span>
+                </div>
+                
+                {/* Shipment Type Info */}
+                {(pkg as any).currentShipment && (
+                  <div className="pt-3 border-t">
+                    <p className="text-sm text-gray-700 font-medium mb-2">Shipment Type</p>
+                    <div className="flex items-center gap-2">
+                      {(pkg as any).currentShipment.type === ShipmentType.Transfer ? (
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
+                            🚚 Inter-Depot Transfer
+                          </span>
+                          {(pkg as any).currentShipment.destinationName && (
+                            <span className="text-sm text-gray-600">
+                              → {(pkg as any).currentShipment.destinationName}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                          🏠 Final Delivery (Last-Mile)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        )}
 
-        {(pkg as any).dimensions && (
-          <div className="border-t pt-6 mb-6">
-            <h3 className="font-semibold mb-4 text-gray-900">Dimensions</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-gray-700 font-medium">Length (cm)</p>
-                <p className="text-gray-900">{(pkg as any).dimensions.lengthCm || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium">Width (cm)</p>
-                <p className="text-gray-900">{(pkg as any).dimensions.widthCm || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium">Height (cm)</p>
-                <p className="text-gray-900">{(pkg as any).dimensions.heightCm || '-'}</p>
+          {/* Recipient Information */}
+          {(pkg as any).recipient && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="font-semibold mb-4 text-gray-900">Recipient Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">Name</p>
+                  <p className="text-gray-900">{(pkg as any).recipient.name || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">DNI</p>
+                  <p className="text-gray-900">{(pkg as any).recipient.dni || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">Phone</p>
+                  <p className="text-gray-900">{(pkg as any).recipient.phone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">Address</p>
+                  <p className="text-gray-900">{(pkg as any).recipient.address || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">Floor/Apartment</p>
+                  <p className="text-gray-900">{(pkg as any).recipient.floorApartment || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">City</p>
+                  <p className="text-gray-900">{(pkg as any).recipient.city || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">Province</p>
+                  <p className="text-gray-900">{(pkg as any).recipient.province || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">Postal Code</p>
+                  <p className="text-gray-900">{(pkg as any).recipient.postalCode || '-'}</p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
 
-      {/* Actions */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 className="font-semibold mb-4 text-gray-900">Actions</h3>
-        <div className="flex gap-2">
-          <button
-            onClick={async () => {
-              setActionError(null);
-              setSavingDeliver(true);
-              try {
-                await deliver.mutateAsync(pkg.id);
-              } catch (err: any) {
-                setActionError(err?.message ?? 'Error');
-              } finally {
-                setSavingDeliver(false);
-              }
-            }}
-            disabled={savingDeliver}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded disabled:opacity-50"
-          >
-            {savingDeliver ? 'Working...' : '✓ Deliver'}
-          </button>
-          <button
-            onClick={async () => {
-              setActionError(null);
-              setSavingCancel(true);
-              try {
-                await cancel.mutateAsync(pkg.id);
-              } catch (err: any) {
-                setActionError(err?.message ?? 'Error');
-              } finally {
-                setSavingCancel(false);
-              }
-            }}
-            disabled={savingCancel}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50"
-          >
-            {savingCancel ? 'Working...' : '✗ Cancel'}
-          </button>
+          {/* Dimensions */}
+          {(pkg as any).dimensions && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="font-semibold mb-4 text-gray-900">Dimensions</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">Length (cm)</p>
+                  <p className="text-gray-900">{(pkg as any).dimensions.lengthCm || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">Width (cm)</p>
+                  <p className="text-gray-900">{(pkg as any).dimensions.widthCm || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">Height (cm)</p>
+                  <p className="text-gray-900">{(pkg as any).dimensions.heightCm || '-'}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-        {actionError && <div className="text-red-600 mt-2">{actionError}</div>}
-      </div>
 
-      {/* History */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold mb-4 text-gray-900">History</h3>
-        {(!history || history.length === 0) ? (
-          <div className="text-gray-600">No history available.</div>
-        ) : (
-          <ul className="space-y-2">
-            {history.map((h: any, idx: number) => (
-              <li key={idx} className="text-sm text-gray-700 border-b pb-2 last:border-b-0">
-                <span className="font-medium">{h.at}</span> — {h.status ?? h.message}
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* Right Column - History */}
+        <div className="col-span-2">
+          <div className="bg-white rounded-lg shadow p-6 sticky top-6">
+            <h3 className="font-semibold mb-4 text-gray-900">History</h3>
+            {(!history || history.length === 0) ? (
+              <div className="text-gray-600">No history available.</div>
+            ) : (
+              <ul className="space-y-2">
+                {history.map((h: any, idx: number) => (
+                  <li key={idx} className="text-sm text-gray-700 border-b pb-2 last:border-b-0">
+                    <span className="font-medium">{h.at}</span> — {h.status ?? h.message}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

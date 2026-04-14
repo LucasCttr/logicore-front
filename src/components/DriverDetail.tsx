@@ -91,7 +91,7 @@ export default function DriverDetail({ id }: Props) {
           >
             ← Back
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">{driverName}</h1>
+          <h1 className="text-3xl font-light text-gray-900">{driverName}</h1>
         </div>
         <button
           onClick={() => setIsEditing(true)}

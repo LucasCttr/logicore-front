@@ -43,6 +43,7 @@ export default function Sidebar() {
     { href: '/shipments', label: 'Shipments', icon: Truck },
     { href: '/vehicles', label: 'Vehicles', icon: Car },
     { href: '/locations', label: 'Locations', icon: MapPin },
+    { href: '/users', label: 'Users', icon: User },
   ];
 
   const handleLogout = () => {
@@ -79,21 +80,6 @@ export default function Sidebar() {
               </Link>
             </li>
           ))}
-          {token && (
-            <li>
-              <Link
-                href="/admin/users"
-                className={`block px-4 py-4 rounded-r-lg transition-all duration-200 text-xl font-light flex items-center gap-7 tracking-tight ${
-                  pathname === '/admin/users'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-500/30 text-white font-medium border-l-4 border-blue-400 pl-3 shadow-lg shadow-blue-500/20'
-                    : 'text-slate-300 hover:bg-gray-700 hover:text-white hover:translate-x-1'
-                }`}
-              >
-                <Users size={24} className="flex-shrink-0" />
-                Users
-              </Link>
-            </li>
-          )}
         </ul>
       </nav>
 
@@ -101,7 +87,7 @@ export default function Sidebar() {
       <div className="border-t border-gray-700 p-4">
         {user && token && (
           <div className="mb-4 bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-lg p-4 border border-blue-700/30">
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
                 <span className="text-lg font-bold text-white">
                   {user.name ? user.name.charAt(0).toUpperCase() : 'U'}

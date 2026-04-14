@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,7 +30,7 @@ export default function ShipmentForm() {
   const [shipmentType, setShipmentType] = useState<'depot-to-depot' | 'last-mile'>('last-mile');
 
   const resolver = zodResolver(createShipmentSchema) as Resolver<CreateShipmentSchema>;
-  const { register, handleSubmit, formState, watch } = useForm<CreateShipmentSchema>({
+  const { register, handleSubmit, formState, watch, setValue } = useForm<CreateShipmentSchema>({
     resolver,
     mode: 'onBlur', // Validate on blur to avoid constant errors
     defaultValues: {
@@ -41,8 +41,25 @@ export default function ShipmentForm() {
     },
   });
 
+  // Filter packages to show only AtDepot ones (status: 4) - moved before useEffect
+  const packages = packagesData?.items?.filter(p => Number(p.status) === 4) ?? [];
+  const drivers = driversData?.items ?? [];
+  const vehicles = vehiclesData?.items ?? [];
+  const locations = Array.isArray(locationsData) ? locationsData : [];
+
   // Watch form values for debugging
   const formValues = watch();
+  const selectedDriverId = watch('driverId');
+
+  // Auto-assign vehicle when driver is selected
+  useEffect(() => {
+    if (selectedDriverId) {
+      const selectedDriver = drivers.find(d => d.id === selectedDriverId);
+      if (selectedDriver?.assignedVehicleId) {
+        setValue('vehicleId', selectedDriver.assignedVehicleId);
+      }
+    }
+  }, [selectedDriverId, drivers, setValue]);
 
   // Toggle package selection
   const togglePackage = (packageId: string) => {
@@ -166,11 +183,6 @@ export default function ShipmentForm() {
     return allSame ? firstDestination : null;
   };
 
-  // Filter packages to show only AtDepot ones (status: 4)
-  const packages = packagesData?.items?.filter(p => Number(p.status) === 4) ?? [];
-  const drivers = driversData?.items ?? [];
-  const vehicles = vehiclesData?.items ?? [];
-  const locations = Array.isArray(locationsData) ? locationsData : [];
   const commonDestination = getCommonDestination();
 
   return (
@@ -361,23 +373,24 @@ export default function ShipmentForm() {
                 )}
               </label>
 
+              {/* Auto-filled vehicle field */}
               <label className="block">
-                <span className="text-sm text-gray-700 font-medium">Vehicle *</span>
-                <select
+                <span className="text-sm text-gray-700 font-medium">Assigned Vehicle 🚗</span>
+                <input
                   {...register('vehicleId')}
-                  className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900"
-                  defaultValue=""
-                >
-                  <option value="">Select a vehicle...</option>
-                  {vehicles.map(vehicle => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.licensePlate} - Weight: {vehicle.maxWeightCapacity}kg, Volume: {vehicle.maxVolumeCapacity}m³
-                    </option>
-                  ))}
-                </select>
-                {formState.errors.vehicleId && (
-                  <p className="text-sm text-red-600 mt-1">{String(formState.errors.vehicleId.message)}</p>
-                )}
+                  type="hidden"
+                />
+                <div className="mt-1 block w-full border rounded px-3 py-2 bg-gray-50 text-slate-900">
+                  {selectedDriverId && drivers.find(d => d.id === selectedDriverId)?.assignedVehicle ? (
+                    <p className="text-sm text-gray-900">
+                      <span className="font-semibold">{drivers.find(d => d.id === selectedDriverId)?.assignedVehicle?.licensePlate}</span>
+                      {' - '}
+                      <span className="text-gray-600">{drivers.find(d => d.id === selectedDriverId)?.assignedVehicle?.make} {drivers.find(d => d.id === selectedDriverId)?.assignedVehicle?.model}</span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">Select a driver to see assigned vehicle</p>
+                  )}
+                </div>
               </label>
 
               <label className="block">

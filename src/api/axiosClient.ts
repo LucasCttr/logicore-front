@@ -34,7 +34,20 @@ api.interceptors.response.use(
   (r) => r,
   async (error) => {
     const originalRequest = error.config;
+    
+    // Only attempt refresh if we have a 401 and haven't already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Check if this is a /refresh request that failed (actual auth failure)
+      if (originalRequest.url?.includes('/auth/refresh')) {
+        // Token refresh failed - clear auth and redirect to login
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });

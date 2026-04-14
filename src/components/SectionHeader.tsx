@@ -29,7 +29,7 @@ export default function SectionHeader() {
 
   return (
     <header className="bg-blue-900 border-b border-gray-700 sticky top-0 z-10">
-      <div className="px-7 py-4">
+      <div className="px-6 py-4">
         <h1 className="text-4xl font-light text-white tracking-tight">{title}</h1>
       </div>
     </header>

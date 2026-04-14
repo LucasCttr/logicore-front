@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import type { PackageForScannerDto } from '../types/scanner';
+import { ShipmentType } from '../types/packages';
 import axiosClient from '../api/axiosClient';
 import { movePackageToDepot } from '../api/packages';
 
@@ -46,10 +47,25 @@ export default function DepotIngressScanner() {
           { label: '📍 Move Shelf', color: 'purple', status: 'at-depot' }
         ];
       case 1: // InTransit
-        return [
-          { label: '✓ Deliver to Customer', color: 'green', status: 'in-transit' },
-          { label: '⚠️ Register Issue', color: 'red', status: 'in-transit' }
-        ];
+        // Determine allowed action based on shipment type
+        if (pkg.currentShipment?.type === ShipmentType.LastMile) {
+          // Last-Mile: can deliver to customer
+          return [
+            { label: '✓ Deliver to Customer', color: 'green', status: 'in-transit' },
+            { label: '⚠️ Register Issue', color: 'red', status: 'in-transit' }
+          ];
+        } else if (pkg.currentShipment?.type === ShipmentType.Transfer) {
+          // Transfer: can only mark as at-depot
+          return [
+            { label: '📦 Mark as At Depot', color: 'orange', status: 'in-transit' },
+            { label: '⚠️ Register Issue', color: 'red', status: 'in-transit' }
+          ];
+        } else {
+          // No shipment info: only register issue
+          return [
+            { label: '⚠️ Register Issue', color: 'red', status: 'in-transit' }
+          ];
+        }
       case 2: // Delivered
         return [];
       default:
@@ -146,11 +162,35 @@ export default function DepotIngressScanner() {
         
         setSuccess(`✓ Package moved to depot successfully`);
         hideDetail();
-      } else if (action.includes('Assign to Shipment')) {
+      } 
+      // Handle "Mark as At Depot" (for Transfer shipments)
+      else if (action.includes('Mark as At Depot')) {
+        await movePackageToDepot(pkg.id);
+        
+        const updatedPackages = new Map(scannedPackages);
+        const updatedPkg = { ...pkg, status: 4, statusLabel: 'At Depot' };
+        updatedPackages.set(pkg.trackingNumber, updatedPkg);
+        setScannedPackages(updatedPackages);
+        
+        setSuccess(`✓ Package marked as at depot (transfer completed)`);
+        hideDetail();
+      }
+      // Handle "Deliver to Customer" (for LastMile shipments)
+      else if (action.includes('Deliver to Customer')) {
+        // Call deliver endpoint
+        await axiosClient.post(`/api/packages/${pkg.id}/deliver`);
+        
+        const updatedPackages = new Map(scannedPackages);
+        const updatedPkg = { ...pkg, status: 2, statusLabel: 'Delivered' }; // 2 = Delivered
+        updatedPackages.set(pkg.trackingNumber, updatedPkg);
+        setScannedPackages(updatedPackages);
+        
+        setSuccess(`✓ Package delivered to customer!`);
+        hideDetail();
+      }
+      else if (action.includes('Assign to Shipment')) {
         setSuccess(`✓ Action "${action}" ready (feature coming soon)`);
       } else if (action.includes('Move Shelf')) {
-        setSuccess(`✓ Action "${action}" ready (feature coming soon)`);
-      } else if (action.includes('Deliver to Customer')) {
         setSuccess(`✓ Action "${action}" ready (feature coming soon)`);
       } else if (action.includes('Register Issue')) {
         setSuccess(`✓ Action "${action}" ready (feature coming soon)`);
@@ -160,7 +200,7 @@ export default function DepotIngressScanner() {
       
       setTimeout(() => setSuccess(null), 2000);
     } catch (err: any) {
-      setError(err?.message || 'Failed to perform action');
+      setError(err?.response?.data?.error || err?.message || 'Failed to perform action');
     } finally {
       setIsActionLoading(false);
     }
@@ -280,6 +320,30 @@ export default function DepotIngressScanner() {
               <div className="text-xs text-gray-600 font-semibold mb-2">Recipient</div>
               <div className="text-lg font-semibold text-slate-900">{selectedPackage.recipientName || 'Unknown'}</div>
             </div>
+
+            {/* Shipment Type Info */}
+            {selectedPackage.currentShipment && (
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-8">
+                <div className="text-xs text-blue-600 font-semibold mb-2">Shipment Type</div>
+                <div className="flex items-center gap-2">
+                  {selectedPackage.currentShipment.type === ShipmentType.Transfer ? (
+                    <div>
+                      <div className="text-lg font-semibold text-purple-700">🚚 Inter-Depot Transfer</div>
+                      {selectedPackage.currentShipment.destinationName && (
+                        <div className="text-sm text-gray-600 mt-1">
+                          Destination: <span className="font-semibold">{selectedPackage.currentShipment.destinationName}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-lg font-semibold text-green-700">🏠 Final Delivery (Last-Mile)</div>
+                      <div className="text-sm text-gray-600 mt-1">Package to be delivered to customer door</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Available Actions */}
             <div className="border-t pt-6">

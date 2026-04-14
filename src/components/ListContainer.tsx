@@ -32,7 +32,7 @@ export default function ListContainer({
 }: ListContainerProps) {
   if (isLoading) {
     return (
-      <div className="w-full bg-white rounded-lg shadow p-6">
+      <div className="w-full bg-white rounded-lg shadow ">
         <div className="text-gray-500">Loading...</div>
       </div>
     );
@@ -40,7 +40,7 @@ export default function ListContainer({
 
   if (error) {
     return (
-      <div className="w-full bg-white rounded-lg shadow p-6">
+      <div className="w-full bg-white rounded-lg shadow ">
         <div className="text-red-600">{error}</div>
       </div>
     );
@@ -48,9 +48,9 @@ export default function ListContainer({
 
   if (isEmpty) {
     return (
-      <div className="w-full bg-white rounded-lg shadow p-6">
-        {filters && <div className="mb-6">{filters}</div>}
-        <div className="text-gray-500">{emptyMessage}</div>
+      <div className="w-full bg-white rounded-lg shadow ">
+        {filters && <div className="">{filters}</div>}
+        <div className="text-gray-500 p-4">{emptyMessage}</div>
       </div>
     );
   }

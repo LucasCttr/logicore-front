@@ -1,3 +1,5 @@
+import { ShipmentType, CurrentShipment } from './packages';
+
 export interface PackageForScannerDto {
   id: string;
   trackingNumber: string;
@@ -7,4 +9,5 @@ export interface PackageForScannerDto {
   originAddress?: string;
   destinationAddress?: string;
   recipientName?: string;
+  currentShipment?: CurrentShipment | null;
 }

@@ -1,3 +1,15 @@
+export enum ShipmentType {
+  Transfer = 1,
+  LastMile = 2
+}
+
+export type CurrentShipment = {
+  id: string;
+  type: ShipmentType;
+  destinationName?: string | null;
+  destinationLocationId?: number | null;
+};
+
 export type Package = {
   id: string;
   trackingNumber?: string | null;
@@ -12,6 +24,7 @@ export type Package = {
   priority?: number | string | null;
   originAddress?: string | null;
   destinationAddress?: string | null;
+  currentShipment?: CurrentShipment | null;
   [key: string]: any;
 };
 
