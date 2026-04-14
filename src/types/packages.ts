@@ -8,6 +8,8 @@ export type Package = {
   destination?: string | null;
   shipmentId?: string | null;
   createdAt?: string | null;
+  lastUpdatedAt?: string | null;
+  priority?: number | string | null;
   originAddress?: string | null;
   destinationAddress?: string | null;
   [key: string]: any;
@@ -18,6 +20,7 @@ export type CreatePackageDto = {
   description: string;
   internalCode: string;
   weight: number;
+  priority: number; // 0 = Standard, 1 = Express, 2 = Economic
   origin: string;
   destination: string;
 

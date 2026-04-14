@@ -5,14 +5,18 @@ import { useRouter } from 'next/navigation';
 import { useVehicles } from '../hooks/useVehicles';
 import ListContainer from './ListContainer';
 import FilterVehicles from './FilterVehicles';
+import EditVehicleModal from './EditVehicleModal';
+import type { Vehicle } from '../api/vehicles';
 
 export default function VehicleList() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(14);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
   const router = useRouter();
-  const { data, isLoading, error } = useVehicles();
+  const { data, isLoading, error, refetch } = useVehicles();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'unavailable'>('all');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
 
   let items = data?.items ?? [];
 
@@ -22,7 +26,8 @@ export default function VehicleList() {
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = 
       (item.plate?.toLowerCase() || '').includes(searchLower) ||
-      (item.model?.toLowerCase() || '').includes(searchLower);
+      (item.model?.toLowerCase() || '').includes(searchLower) ||
+      (item.make?.toLowerCase() || '').includes(searchLower);
 
     // Filtro de estado
     const matchesStatus = 
@@ -44,6 +49,11 @@ export default function VehicleList() {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, itemsPerPage]);
 
+  const handleOpenEditModal = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    setShowEditModal(true);
+  };
+
   const newButton = (
     <button
       onClick={() => router.push('/vehicles/new')}
@@ -54,15 +64,16 @@ export default function VehicleList() {
   );
 
   return (
-    <ListContainer
-      filters={
-        <FilterVehicles
-          onSearch={setSearchQuery}
-          onStatusFilter={setStatusFilter}
-          onItemsPerPageChange={setItemsPerPage}
-          newButton={newButton}
-        />
-      }
+    <>
+      <ListContainer
+        filters={
+          <FilterVehicles
+            onSearch={setSearchQuery}
+            onStatusFilter={setStatusFilter}
+            onItemsPerPageChange={setItemsPerPage}
+            newButton={newButton}
+          />
+        }
       isLoading={isLoading}
       error={error?.message ?? null}
       isEmpty={items.length === 0}
@@ -83,6 +94,8 @@ export default function VehicleList() {
         <thead>
           <tr className="bg-gray-50 border-b">
             <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">License Plate</th>
+            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Make</th>
+            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Model</th>
             <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Max Weight (kg)</th>
             <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Max Volume (m³)</th>
             <th className="text-center px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
@@ -92,7 +105,9 @@ export default function VehicleList() {
         <tbody>
           {paginatedItems.map((vehicle, idx) => (
             <tr key={vehicle.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
-              <td className="px-6 py-4 font-semibold text-gray-800">{vehicle.plate}</td>
+              <td className="px-6 py-4 font-semibold text-gray-800">{vehicle.licensePlate || '-'}</td>
+              <td className="px-6 py-4 text-gray-600">{vehicle.make || '-'}</td>
+              <td className="px-6 py-4 text-gray-600">{vehicle.model || '-'}</td>
               <td className="px-6 py-4 text-gray-600">{vehicle.maxWeightCapacity}</td>
               <td className="px-6 py-4 text-gray-600">{vehicle.maxVolumeCapacity}</td>
               <td className="px-6 py-4 text-center">
@@ -104,18 +119,35 @@ export default function VehicleList() {
                   {vehicle.isActive ? 'Active' : 'Inactive'}
                 </span>
               </td>
-              <td className="px-6 py-4 text-right">
+              <td className="px-6 py-4 text-right space-x-2">
                 <button
-                  onClick={() => router.push(`/vehicles/${vehicle.id}`)}
+                  onClick={() => handleOpenEditModal(vehicle)}
                   className="px-3 py-1 border border-blue-300 text-blue-600 rounded hover:bg-blue-50 text-sm"
                 >
-                  View
+                  Edit
                 </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-    </ListContainer>
+      </ListContainer>
+
+      {selectedVehicle && (
+        <EditVehicleModal
+          isOpen={showEditModal}
+          vehicle={selectedVehicle}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedVehicle(null);
+          }}
+          onSuccess={() => {
+            setShowEditModal(false);
+            setSelectedVehicle(null);
+            refetch();
+          }}
+        />
+      )}
+    </>
   );
 }

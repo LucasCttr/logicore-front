@@ -6,6 +6,7 @@ import {
   registerDriver,
   updateDriverStatus,
   updateDriver,
+  assignVehicleToDriver,
 } from '../api/drivers';
 import type { Driver, RegisterDriverDto, UpdateDriverStatusDto, UpdateDriverDto } from '../types/drivers';
 
@@ -56,6 +57,17 @@ export function useUpdateDriver() {
   const qc = useQueryClient();
   return useMutation<Driver, Error, { id: string; payload: UpdateDriverDto }>({
     mutationFn: ({ id, payload }) => updateDriver(id, payload),
+    onSuccess(data) {
+      qc.invalidateQueries({ queryKey: ['drivers'] });
+      qc.setQueryData(['driver', data.id], data);
+    },
+  });
+}
+
+export function useAssignVehicleToDriver() {
+  const qc = useQueryClient();
+  return useMutation<Driver, Error, { driverId: string; vehicleId: string | null }>({
+    mutationFn: ({ driverId, vehicleId }) => assignVehicleToDriver(driverId, vehicleId),
     onSuccess(data) {
       qc.invalidateQueries({ queryKey: ['drivers'] });
       qc.setQueryData(['driver', data.id], data);

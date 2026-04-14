@@ -8,7 +8,7 @@ import FilterShipments from './FilterShipments';
 
 export default function ShipmentList() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(14);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
   const router = useRouter();
   const { data, isLoading, error } = useShipments(currentPage, itemsPerPage);
   const [searchQuery, setSearchQuery] = useState('');

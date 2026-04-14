@@ -9,6 +9,11 @@ const createPackageSchema = z.object({
     const n = Number(v);
     return Number.isNaN(n) ? v : n;
   }, z.number().positive('Weight must be positive')),
+  priority: z.preprocess((v) => {
+    if (v === '' || v === null || v === undefined) return 0;
+    const n = Number(v);
+    return Number.isNaN(n) ? 0 : n;
+  }, z.number().int().min(0).max(2, 'Invalid priority')),
   origin: z.string().min(1, 'Origin is required'),
   destination: z.string().min(1, 'Destination is required'),
   // Recipient fields

@@ -57,7 +57,7 @@ export default function LocationForm({ onSuccess }: LocationFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl mx-auto p-4 bg-white rounded border border-gray-300 shadow">
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl mx-auto p-4 bg-white rounded border border-gray-300 shadow mt-4">
       <h2 className="text-lg font-semibold mb-4 text-slate-900">Add New Distribution Center</h2>
 
       {submitError && (

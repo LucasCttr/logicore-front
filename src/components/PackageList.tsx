@@ -7,6 +7,58 @@ import { usePackages, useCancelPackage } from '../hooks/usePackages';
 import ListContainer from './ListContainer';
 import FilterPackages from './FilterPackages';
 
+const formatDate = (dateString: string | null | undefined) => {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return '-';
+  }
+};
+
+const getPriorityLabel = (priority: any) => {
+  if (priority === null || priority === undefined) return 'Standard';
+  const asNumber = typeof priority === 'number' ? priority : Number(priority as any);
+  if (!Number.isNaN(asNumber)) {
+    switch (asNumber) {
+      case 0:
+        return 'Standard';
+      case 1:
+        return 'Express';
+      case 2:
+        return 'Economic';
+      default:
+        return 'Standard';
+    }
+  }
+  return 'Standard';
+};
+
+const getPriorityBadgeClass = (priority: any) => {
+  if (priority === null || priority === undefined) return 'bg-gray-100 text-gray-800';
+  const asNumber = typeof priority === 'number' ? priority : Number(priority as any);
+  if (!Number.isNaN(asNumber)) {
+    switch (asNumber) {
+      case 0:
+        return 'bg-gray-100 text-gray-800';
+      case 1:
+        return 'bg-red-100 text-red-800';
+      case 2:
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
+  return 'bg-gray-100 text-gray-800';
+};
+
 const getStatusLabel = (status: any) => {
   if (status === null || status === undefined) return '-';
   const asNumber = typeof status === 'number' ? status : Number(status as any);
@@ -130,11 +182,14 @@ export default function PackageList() {
       <table className="w-full">
         <thead>
           <tr className="bg-gray-50 border-b">
-            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Tracking</th>
-            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Recipient</th>
-            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Destination</th>
-            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
-            <th className="text-right px-6 py-3 text-sm font-semibold text-gray-700">Actions</th>
+            <th className="text-left px-8 py-3 text-sm font-semibold text-gray-700">Tracking</th>
+            <th className="text-left px-8 py-3 text-sm font-semibold text-gray-700">Recipient</th>
+            <th className="text-left px-8 py-3 text-sm font-semibold text-gray-700">Status</th>
+            <th className="text-left pl-16 pr-8 py-3 text-sm font-semibold text-gray-700">Destination</th>
+            <th className="text-left px-8 py-3 text-sm font-semibold text-gray-700">Created</th>
+            <th className="text-left px-8 py-3 text-sm font-semibold text-gray-700">Last Updated</th>
+            <th className="text-left px-10 py-3 text-sm font-semibold text-gray-700">Priority</th>
+            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -145,15 +200,22 @@ export default function PackageList() {
 
             return (
               <tr key={p.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
-                <td className="px-6 py-4 font-medium text-gray-800">{title}</td>
-                <td className="px-6 py-4 text-gray-600">{recipientName}</td>
-                <td className="px-6 py-4 text-gray-600">{destination}</td>
+                <td className="px-8 py-4 font-medium text-gray-800">{title}</td>
+                <td className="px-8 py-4 text-gray-600">{recipientName}</td>
                 <td className="px-6 py-4">
                   <span className={`px-3 py-1 rounded text-xs font-medium ${getStatusBadgeClass(p.status)}`}>
                     {getStatusLabel(p.status)}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right space-x-2">
+                <td className="pl-16 pr-8 py-4 text-gray-600">{destination}</td>
+                <td className="px-8 py-4 text-gray-600 text-sm">{formatDate(p.createdAt)}</td>
+                <td className="px-8 py-4 text-gray-600 text-sm">{formatDate(p.lastUpdatedAt)}</td>
+                <td className="px-8 py-4">
+                  <span className={`px-3 py-1 rounded text-xs font-medium ${getPriorityBadgeClass(p.priority)}`}>
+                    {getPriorityLabel(p.priority)}
+                  </span>
+                </td>
+                <td className="px-3 py-4 space-x-2 flex">
                   <button
                     onClick={() => router.push(`/packages/${p.id}`)}
                     className="px-3 py-1 border border-blue-300 text-blue-600 rounded hover:bg-blue-50 text-sm"

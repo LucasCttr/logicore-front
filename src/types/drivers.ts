@@ -5,7 +5,16 @@ export type Driver = {
   licenseNumber?: string | null;
   isActive?: boolean | null;
   applicationUserId?: string | null;
+  assignedVehicleId?: string | null;
+  assignedVehicle?: AssignedVehicleInfo | null;
   [key: string]: any;
+};
+
+export type AssignedVehicleInfo = {
+  id: string;
+  licensePlate?: string | null;
+  model?: string | null;
+  make?: string | null;
 };
 
 export type RegisterDriverDto = {

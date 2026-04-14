@@ -5,14 +5,17 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import registerDriverSchema, { RegisterDriverSchema } from '../schemas/driver';
 import { useRegisterDriver } from '../hooks/useDriver';
-import type { RegisterDriverDto } from '../types/drivers';
+import type { RegisterDriverDto, Driver } from '../types/drivers';
 import { useRouter } from 'next/navigation';
+import AssignVehicleModal from './AssignVehicleModal';
 
 export default function DriverForm() {
   const router = useRouter();
   const mutation = useRegisterDriver();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [createdDriver, setCreatedDriver] = useState<Driver | null>(null);
 
   const { register, handleSubmit, formState } = useForm<RegisterDriverSchema>({
     resolver: zodResolver(registerDriverSchema),
@@ -31,14 +34,15 @@ export default function DriverForm() {
     setSubmitting(true);
     setSubmitError(null);
     try {
+      let driver: Driver;
       if (mutation.mutateAsync) {
-        await mutation.mutateAsync(payload);
+        driver = await mutation.mutateAsync(payload);
       } else {
         // fallback to mutate with Promise wrapper
-        await new Promise<void>((resolve, reject) => {
+        driver = await new Promise<Driver>((resolve, reject) => {
           mutation.mutate(payload, {
-            onSuccess() {
-              resolve();
+            onSuccess(data) {
+              resolve(data);
             },
             onError(err) {
               reject(err);
@@ -46,12 +50,19 @@ export default function DriverForm() {
           });
         });
       }
-      router.push('/drivers');
+      setCreatedDriver(driver);
+      setShowAssignModal(true);
     } catch (err: any) {
       setSubmitError(err?.message ?? 'Error');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleAssignComplete = () => {
+    setShowAssignModal(false);
+    setCreatedDriver(null);
+    router.push('/drivers');
   };
 
   return (
@@ -100,6 +111,16 @@ export default function DriverForm() {
         </button>
         {submitError && <div className="text-sm text-red-600">{submitError}</div>}
       </div>
+
+      {createdDriver && (
+        <AssignVehicleModal
+          isOpen={showAssignModal}
+          driverId={createdDriver.id}
+          driverName={createdDriver.name}
+          onClose={() => setShowAssignModal(false)}
+          onSuccess={handleAssignComplete}
+        />
+      )}
     </form>
   );
 }

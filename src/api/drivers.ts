@@ -48,6 +48,13 @@ export async function updateDriverStatus(id: string, payload: UpdateDriverStatus
   return result?.value ?? result?.Value ?? result;
 }
 
+export async function assignVehicleToDriver(driverId: string, vehicleId: string | null): Promise<Driver> {
+  const body: any = { VehicleId: vehicleId || null };
+  const res = await api.put(`/api/drivers/${driverId}/assign-vehicle`, body);
+  const result: any = res.data;
+  return result?.value ?? result?.Value ?? result;
+}
+
 export async function updateDriver(id: string, payload: any): Promise<Driver> {
   // backend expects PascalCase property names for model binding
   const body: any = {

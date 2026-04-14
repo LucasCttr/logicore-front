@@ -40,6 +40,7 @@ export default function PackageForm() {
       description: data.description,
       internalCode: data.internalCode,
       weight: data.weight,
+      priority: data.priority,
       origin: data.origin,
       destination: data.destination,
       recipientName: data.recipientName,
@@ -100,6 +101,16 @@ export default function PackageForm() {
         <span className="text-sm text-gray-700">Weight (kg)</span>
         <input type="number" step="any" {...register('weight')} className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900" />
         {formState.errors.weight && <p className="text-sm text-red-600 mt-1">{String(formState.errors.weight.message)}</p>}
+      </label>
+
+      <label className="block mb-2">
+        <span className="text-sm text-gray-700">Priority</span>
+        <select {...register('priority')} className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900">
+          <option value="0">Standard</option>
+          <option value="1">Express</option>
+          <option value="2">Economic</option>
+        </select>
+        {formState.errors.priority && <p className="text-sm text-red-600 mt-1">{String(formState.errors.priority.message)}</p>}
       </label>
 
       <fieldset className="border-t">

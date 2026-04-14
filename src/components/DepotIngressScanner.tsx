@@ -187,11 +187,6 @@ export default function DepotIngressScanner() {
   return (
     <div className="w-full to-gray-50 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Scanner</h1>
-          <p className="text-gray-600">Scan packages and manage actions based on status</p>
-        </div>
 
         {/* Scanner Input */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border-2 border-blue-200">

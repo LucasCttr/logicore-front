@@ -371,7 +371,7 @@ export default function ShipmentForm() {
                   <option value="">Select a vehicle...</option>
                   {vehicles.map(vehicle => (
                     <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.plate} - Weight: {vehicle.maxWeightCapacity}kg, Volume: {vehicle.maxVolumeCapacity}m³
+                      {vehicle.licensePlate} - Weight: {vehicle.maxWeightCapacity}kg, Volume: {vehicle.maxVolumeCapacity}m³
                     </option>
                   ))}
                 </select>

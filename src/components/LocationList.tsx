@@ -12,7 +12,7 @@ interface LocationListProps {
 
 export default function LocationList({ onAddClick, isFormOpen }: LocationListProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(14);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
   const { data, isLoading, error } = useLocations();
   const [searchQuery, setSearchQuery] = useState('');
 
