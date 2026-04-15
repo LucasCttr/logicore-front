@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useDriversWithDetails } from '../hooks/useDriversWithDetails';
 import ListContainer from './ListContainer';
@@ -43,12 +42,6 @@ export default function DriverList() {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
-  const newButton = (
-    <Link href="/drivers/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded whitespace-nowrap">
-      + New Driver
-    </Link>
-  );
-
   return (
     <>
       <ListContainer
@@ -57,7 +50,6 @@ export default function DriverList() {
             onSearch={setSearchQuery}
             onStatusFilter={setStatusFilter}
             onItemsPerPageChange={setItemsPerPage}
-            newButton={newButton}
           />
         }
         isLoading={isLoading}

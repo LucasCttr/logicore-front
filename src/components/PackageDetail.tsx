@@ -478,20 +478,130 @@ export default function PackageDetail({ id }: Props) {
           )}
         </div>
 
-        {/* Right Column - History */}
+        {/* Right Column - History Timeline */}
         <div className="col-span-2">
-          <div className="bg-white rounded-lg shadow p-6 sticky top-6">
-            <h3 className="font-semibold mb-4 text-gray-900">History</h3>
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg shadow-lg p-6 sticky top-6 border border-gray-200">
+            <div className="flex items-center gap-2 mb-6">
+              <h3 className="font-bold text-lg text-gray-900">History</h3>
+              {history && (
+                <span className="ml-auto bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                  {history.length} eventos
+                </span>
+              )}
+            </div>
             {(!history || history.length === 0) ? (
-              <div className="text-gray-600">No history available.</div>
+              <div className="text-center py-8">
+                <p className="text-gray-500 text-sm">Sin historial disponible</p>
+              </div>
             ) : (
-              <ul className="space-y-2">
-                {history.map((h: any, idx: number) => (
-                  <li key={idx} className="text-sm text-gray-700 border-b pb-2 last:border-b-0">
-                    <span className="font-medium">{h.at}</span> — {h.status ?? h.message}
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-0">
+                {history.map((h: any, idx: number) => {
+                  const statusColors: Record<string, { bg: string; border: string; icon: string; label: string }> = {
+                    'Pending': { bg: 'bg-yellow-50', border: 'border-yellow-400', icon: '⏳', label: 'Pendiente' },
+                    'InTransit': { bg: 'bg-orange-50', border: 'border-orange-400', icon: '🚚', label: 'En Tránsito' },
+                    'Delivered': { bg: 'bg-green-50', border: 'border-green-400', icon: '✅', label: 'Entregado' },
+                    'AtDepot': { bg: 'bg-blue-50', border: 'border-blue-400', icon: '🏢', label: 'En Depósito' },
+                    'Canceled': { bg: 'bg-red-50', border: 'border-red-400', icon: '❌', label: 'Cancelado' },
+                    'DeliveredToCenter': { bg: 'bg-indigo-50', border: 'border-indigo-400', icon: '📦', label: 'Centro' },
+                    'Returned': { bg: 'bg-pink-50', border: 'border-pink-400', icon: '↩️', label: 'Devuelto' },
+                    'Created': { bg: 'bg-slate-50', border: 'border-slate-400', icon: '💿', label: 'Creado' },
+                  };
+
+                  const toStatusInfo = statusColors[h.toStatus] || statusColors['Pending'];
+                  const isLast = idx === history.length - 1;
+
+                  return (
+                    <div key={idx} className="relative">
+                      {/* Timeline line */}
+                      {!isLast && (
+                        <div className="absolute left-6 top-16 w-1 h-8 bg-gradient-to-b from-gray-300 to-gray-200"></div>
+                      )}
+
+                      {/* Timeline item */}
+                      <div className={`${toStatusInfo.bg} ${toStatusInfo.border} border-l-4 rounded-r-lg p-4 mb-4 transition-all hover:shadow-md`}>
+                        {/* Header: Status transition */}
+                        <div className="flex items-start gap-3">
+                          <div className="text-2xl flex-shrink-0 mt-0.5">{toStatusInfo.icon}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                              <span className="font-bold text-gray-900 text-sm">
+                                {h.fromStatus}
+                              </span>
+                              <span className="text-gray-400">→</span>
+                              <span className="font-bold text-gray-900 text-sm">
+                                {h.toStatus}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                               {new Date(h.occurredAt).toLocaleString('es-ES', {
+                                dateStyle: 'short',
+                                timeStyle: 'short'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Details */}
+                        <div className="mt-3 ml-11 space-y-2 text-xs">
+                          {h.firstName && h.lastName && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">👤</span>
+                              <div className="flex-1">
+                                <div className="font-semibold text-gray-900">
+                                  {h.firstName} {h.lastName}
+                                </div>
+                                {h.userName && (
+                                  <div className="text-xs text-gray-500">
+                                    {h.userName}
+                                  </div>
+                                )}
+                              </div>
+                              {h.userRoles && (
+                                <div className="flex gap-1">
+                                  {h.userRoles.split(', ').map((role: string, idx: number) => (
+                                    <span
+                                      key={idx}
+                                      className={`px-2 py-0.5 rounded text-xs font-bold text-white ${
+                                        role === 'Admin'
+                                          ? 'bg-red-500'
+                                          : role === 'Driver'
+                                          ? 'bg-blue-500'
+                                          : 'bg-gray-500'
+                                      }`}
+                                    >
+                                      {role}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {h.locationId && (
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <span>📍</span>
+                              <span>Depósito #{h.locationId}</span>
+                            </div>
+                          )}
+                          {h.shipmentId && (
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <span>🚛</span>
+                              <span className="font-mono bg-white bg-opacity-60 px-2 py-0.5 rounded">
+                                {h.shipmentId.substring(0, 12)}...
+                              </span>
+                            </div>
+                          )}
+                          {h.notes && (
+                            <div className="flex gap-2 text-gray-700 bg-white bg-opacity-70 p-2 rounded mt-2">
+                              <span className="flex-shrink-0">💬</span>
+                              <span className="italic">{h.notes}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>

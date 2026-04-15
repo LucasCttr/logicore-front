@@ -24,6 +24,28 @@ export default function SectionHeader({ title: customTitle, backHref }: SectionH
     if (path === '/admin/users') return 'Users';
     if (path === '/login') return 'Login';
     
+    // Driver-specific routes
+    if (path === '/driver/shipments') return 'My Active Shipments';
+    if (path === '/driver/scanner') return 'Scanner';
+    if (path === '/driver/profile') return 'My Profile & License';
+    
+    // Dynamic routes (e.g., /shipments/[id])
+    if (path.startsWith('/shipments/') && path !== '/shipments/new') {
+      return 'Shipment Details';
+    }
+    if (path.startsWith('/drivers/') && path !== '/drivers/new') {
+      return 'Driver Details';
+    }
+    if (path.startsWith('/packages/') && path !== '/packages/new') {
+      return 'Package Details';
+    }
+    if (path.startsWith('/vehicles/') && path !== '/vehicles/new') {
+      return 'Vehicle Details';
+    }
+    if (path.startsWith('/locations/') && path !== '/locations/new') {
+      return 'Location Details';
+    }
+    
     // Extraer nombre genérico de rutas dinámicas
     const parts = path.split('/').filter(p => p);
     if (parts.length > 0) {

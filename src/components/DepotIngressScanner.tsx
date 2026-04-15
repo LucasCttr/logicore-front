@@ -5,10 +5,19 @@ import type { PackageForScannerDto } from '../types/scanner';
 import { ShipmentType } from '../types/packages';
 import axiosClient from '../api/axiosClient';
 import { movePackageToDepot } from '../api/packages';
+import { getShipments, addPackageToShipment } from '../api/shipments';
+import type Shipment from '../types/shipments';
 
 interface ScannerMode {
   mode: 'list' | 'detail';
   selectedPackageId?: string;
+}
+
+interface ShipmentSelection {
+  isOpen: boolean;
+  packageId?: string;
+  shipments: Shipment[];
+  isLoading: boolean;
 }
 
 export default function DepotIngressScanner() {
@@ -20,6 +29,11 @@ export default function DepotIngressScanner() {
   const [scannerMode, setScannerMode] = useState<ScannerMode>({ mode: 'list' });
   const [duplicateScan, setDuplicateScan] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [shipmentSelection, setShipmentSelection] = useState<ShipmentSelection>({
+    isOpen: false,
+    shipments: [],
+    isLoading: false,
+  });
 
   // Keep input focused
   useEffect(() => {
@@ -39,33 +53,20 @@ export default function DepotIngressScanner() {
     switch (pkg.status) {
       case 0: // Pending
         return [
-          { label: '📦 Move to Depot', color: 'green', status: 'pending' }
-        ];
-      case 4: // AtDepot
-        return [
-          { label: '🚚 Assign to Shipment', color: 'blue', status: 'at-depot' },
-          { label: '📍 Move Shelf', color: 'purple', status: 'at-depot' }
+          { label: '🚚 Collect', color: 'blue', status: 'pending' },
+          { label: '⏭️ Skip', color: 'gray', status: 'skip' }
         ];
       case 1: // InTransit
-        // Determine allowed action based on shipment type
-        if (pkg.currentShipment?.type === ShipmentType.LastMile) {
-          // Last-Mile: can deliver to customer
-          return [
-            { label: '✓ Deliver to Customer', color: 'green', status: 'in-transit' },
-            { label: '⚠️ Register Issue', color: 'red', status: 'in-transit' }
-          ];
-        } else if (pkg.currentShipment?.type === ShipmentType.Transfer) {
-          // Transfer: can only mark as at-depot
-          return [
-            { label: '📦 Mark as At Depot', color: 'orange', status: 'in-transit' },
-            { label: '⚠️ Register Issue', color: 'red', status: 'in-transit' }
-          ];
-        } else {
-          // No shipment info: only register issue
-          return [
-            { label: '⚠️ Register Issue', color: 'red', status: 'in-transit' }
-          ];
+        // Show action to drop off at depot
+        return [{ label: '📍 Drop at Depot', color: 'orange', status: 'in-transit' }];
+      case 4: // AtDepot
+        // Show delivery option for Last-Mile packages (customer pickup at depot)
+        // If shipment type is not returned, assume LastMile for drivers (Transfer packages handled differently)
+        const isLastMile = pkg.currentShipment?.type === ShipmentType.LastMile || !pkg.currentShipment?.type;
+        if (isLastMile) {
+          return [{ label: '✓ Customer Pickup', color: 'green', status: 'at-depot' }];
         }
+        return [];
       case 2: // Delivered
         return [];
       default:
@@ -99,6 +100,9 @@ export default function DepotIngressScanner() {
       const newScanned = new Map(scannedPackages);
       newScanned.set(trackingNumber, packageData);
       setScannedPackages(newScanned);
+      
+      // Auto-select the newly scanned package to show details
+      setScannerMode({ mode: 'detail', selectedPackageId: packageData.id });
       
       setSuccess(`✓ Package ${packageData.trackingNumber} scanned`);
       setInputValue('');
@@ -144,27 +148,80 @@ export default function DepotIngressScanner() {
     if (inputRef.current) inputRef.current.focus();
   };
 
-  // Handle action
-  const handleAction = async (pkg: PackageForScannerDto, action: string) => {
+  // Open shipment selection modal
+  const openShipmentSelection = async (pkg: PackageForScannerDto) => {
+    setShipmentSelection({ isOpen: true, packageId: pkg.id, shipments: [], isLoading: true });
+    try {
+      const result = await getShipments(1, 100, undefined, undefined, 'NotShipped');
+      setShipmentSelection(prev => ({ ...prev, shipments: result.items, isLoading: false }));
+    } catch (err) {
+      setError('Failed to load shipments');
+      setShipmentSelection(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  // Assign package to shipment
+  const assignPackageToShipment = async (shipmentId: string) => {
+    if (!shipmentSelection.packageId) return;
     setIsActionLoading(true);
     try {
-      setError(null);
+      await addPackageToShipment(shipmentId, { packageId: shipmentSelection.packageId });
       
-      // Handle "Move to Depot" action
-      if (action.includes('Move to Depot')) {
+      const updatedPackages = new Map(scannedPackages);
+      const pkgToUpdate = Array.from(scannedPackages.values()).find(p => p.id === shipmentSelection.packageId);
+      if (pkgToUpdate) {
+        const updatedPkg = { ...pkgToUpdate, status: 4, statusLabel: 'At Depot' }; // Move to AtDepot
+        updatedPackages.set(pkgToUpdate.trackingNumber, updatedPkg);
+        setScannedPackages(updatedPackages);
+      }
+      
+      setSuccess(`✓ Package assigned to shipment!`);
+      setShipmentSelection({ isOpen: false, shipments: [], isLoading: false });
+      hideDetail();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to assign package');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // Handle action
+  const handleAction = async (pkg: PackageForScannerDto, action: string) => {
+    try {
+      setError(null);
+      setIsActionLoading(true);
+      
+      // Handle "Collect" action (Pending → InTransit)
+      if (action.includes('Collect')) {
+        await axiosClient.post(`/api/packages/${pkg.id}/collect`, {});
+        
+        const updatedPackages = new Map(scannedPackages);
+        const updatedPkg = { ...pkg, status: 1, statusLabel: 'In Transit' }; // 1 = InTransit
+        updatedPackages.set(pkg.trackingNumber, updatedPkg);
+        setScannedPackages(updatedPackages);
+        
+        setSuccess(`✓ Package collected and loaded in vehicle!`);
+        hideDetail();
+      }
+      // Handle "Skip" action (Pending stays Pending - couldn't collect)
+      else if (action.includes('Skip')) {
+        setSuccess(`⏭️ Package skipped - remains pending for next attempt`);
+        hideDetail();
+      }
+      // Handle "Drop at Depot" action (InTransit → AtDepot)
+      else if (action.includes('Drop at Depot')) {
         await movePackageToDepot(pkg.id);
         
-        // Update the scanned packages list with new status
         const updatedPackages = new Map(scannedPackages);
         const updatedPkg = { ...pkg, status: 4, statusLabel: 'At Depot' }; // 4 = AtDepot
         updatedPackages.set(pkg.trackingNumber, updatedPkg);
         setScannedPackages(updatedPackages);
         
-        setSuccess(`✓ Package moved to depot successfully`);
+        setSuccess(`✓ Package dropped at depot!`);
         hideDetail();
-      } 
-      // Handle "Mark as At Depot" (for Transfer shipments)
-      else if (action.includes('Mark as At Depot')) {
+      }
+      // Handle "Move to Depot" action (legacy)
+      else if (action.includes('Move to Depot')) {
         await movePackageToDepot(pkg.id);
         
         const updatedPackages = new Map(scannedPackages);
@@ -172,13 +229,12 @@ export default function DepotIngressScanner() {
         updatedPackages.set(pkg.trackingNumber, updatedPkg);
         setScannedPackages(updatedPackages);
         
-        setSuccess(`✓ Package marked as at depot (transfer completed)`);
+        setSuccess(`✓ Package moved to depot successfully`);
         hideDetail();
-      }
-      // Handle "Deliver to Customer" (for LastMile shipments)
+      } 
+      // Handle "Deliver to Customer" (for LastMile shipments in transit)
       else if (action.includes('Deliver to Customer')) {
-        // Call deliver endpoint
-        await axiosClient.post(`/api/packages/${pkg.id}/deliver`);
+        await axiosClient.post(`/api/packages/${pkg.id}/deliver`, {});
         
         const updatedPackages = new Map(scannedPackages);
         const updatedPkg = { ...pkg, status: 2, statusLabel: 'Delivered' }; // 2 = Delivered
@@ -188,14 +244,20 @@ export default function DepotIngressScanner() {
         setSuccess(`✓ Package delivered to customer!`);
         hideDetail();
       }
-      else if (action.includes('Assign to Shipment')) {
-        setSuccess(`✓ Action "${action}" ready (feature coming soon)`);
-      } else if (action.includes('Move Shelf')) {
-        setSuccess(`✓ Action "${action}" ready (feature coming soon)`);
-      } else if (action.includes('Register Issue')) {
-        setSuccess(`✓ Action "${action}" ready (feature coming soon)`);
-      } else {
-        setSuccess(`✓ Action "${action}" ready (feature coming soon)`);
+      // Handle "Customer Pickup" (from AtDepot for LastMile)
+      else if (action.includes('Customer Pickup')) {
+        await axiosClient.post(`/api/packages/${pkg.id}/mark-delivered`, { 
+          packageId: pkg.id,
+          deliveryNotes: 'Picked up at depot' 
+        });
+        
+        const updatedPackages = new Map(scannedPackages);
+        const updatedPkg = { ...pkg, status: 2, statusLabel: 'Delivered' }; // 2 = Delivered
+        updatedPackages.set(pkg.trackingNumber, updatedPkg);
+        setScannedPackages(updatedPackages);
+        
+        setSuccess(`✓ Package picked up by customer at depot!`);
+        hideDetail();
       }
       
       setTimeout(() => setSuccess(null), 2000);
@@ -243,7 +305,7 @@ export default function DepotIngressScanner() {
                 placeholder="Scan here or paste tracking number..."
                 autoFocus
                 disabled={scannerMode.mode === 'detail'}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-lg font-mono disabled:bg-gray-100"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-lg font-mono text-gray-900 disabled:bg-gray-100"
               />
             </div>
             <button
@@ -348,7 +410,7 @@ export default function DepotIngressScanner() {
             {/* Available Actions */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Available Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
                 {getAvailableActions(selectedPackage).length > 0 ? (
                   getAvailableActions(selectedPackage).map((action, idx) => (
                     <button
@@ -383,79 +445,52 @@ export default function DepotIngressScanner() {
           </div>
         )}
 
+        {/* Shipment Selection Modal */}
+        {shipmentSelection.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-2xl p-6 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">Select Shipment</h2>
+              
+              {shipmentSelection.isLoading ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-600">Loading shipments...</div>
+                </div>
+              ) : shipmentSelection.shipments.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-600">No available shipments</div>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {shipmentSelection.shipments.map((shipment) => (
+                    <button
+                      key={shipment.id}
+                      onClick={() => assignPackageToShipment(shipment.id)}
+                      disabled={isActionLoading}
+                      className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="font-semibold text-slate-900">{shipment.routeCode}</div>
+                      <div className="text-sm text-gray-600">
+                        Vehicle: {shipment.vehicleId} • Packages: {shipment.packageIds?.length || 0}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              <button
+                onClick={() => setShipmentSelection({ isOpen: false, shipments: [], isLoading: false })}
+                className="mt-4 w-full py-2 px-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Packages List */}
         {scannerMode.mode === 'list' && scannedPackages.size > 0 && (
           <>
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-white rounded-lg shadow p-4 text-center">
-                <div className="text-3xl font-bold text-blue-600">{scannedPackages.size}</div>
-                <div className="text-sm text-gray-600">Scanned</div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4 text-center">
-                <div className="text-3xl font-bold text-green-600">{totalWeight.toFixed(2)}</div>
-                <div className="text-sm text-gray-600">kg Total</div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4 text-center">
-                <div className="text-3xl font-bold text-purple-600">
-                  {Array.from(scannedPackages.values()).filter(p => p.status === 0).length}
-                </div>
-                <div className="text-sm text-gray-600">Pending</div>
-              </div>
-            </div>
-
-            {/* Packages Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array.from(scannedPackages.values()).map((pkg) => {
-                return (
-                  <div
-                    key={pkg.id}
-                    className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden cursor-pointer border-l-4"
-                    style={{
-                      borderLeftColor: pkg.status === 0 ? '#fbbf24' : pkg.status === 4 ? '#f97316' : pkg.status === 1 ? '#3b82f6' : '#10b981'
-                    }}
-                  >
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-mono font-bold text-sm text-slate-900">{pkg.trackingNumber}</h3>
-                          <p className="text-xs text-gray-500 mt-1">{pkg.recipientName || 'Unknown'}</p>
-                        </div>
-                        <span className={`px-2 py-1 rounded text-xs font-semibold text-white ${
-                          pkg.status === 0 ? 'bg-yellow-500' :
-                          pkg.status === 4 ? 'bg-orange-500' :
-                          pkg.status === 1 ? 'bg-blue-500' :
-                          pkg.status === 2 ? 'bg-green-500' :
-                          'bg-gray-500'
-                        }`}>
-                          {pkg.statusLabel}
-                        </span>
-                      </div>
-
-                      <div className="text-sm text-gray-600 mb-3 space-y-1">
-                        <div>📍 {pkg.destinationAddress || 'N/A'}</div>
-                        <div>⚖️ {pkg.weight.toFixed(2)} kg</div>
-                      </div>
-
-                      <div className="flex gap-2 pt-3 border-t">
-                        <button
-                          onClick={() => showDetail(pkg)}
-                          className="flex-1 py-1 px-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded transition"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => removePackage(pkg.trackingNumber)}
-                          className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-600 text-xs font-semibold rounded transition"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {/* Packages Table */}
           </>
         )}
 

@@ -12,7 +12,7 @@ interface FilterShipmentsProps {
 
 export default function FilterShipments({ onSearch, onStatusFilter, onDateFilter, onItemsPerPageChange, newButton }: FilterShipmentsProps) {
   return (
-    <div className="p-6 border-b border-gray-200 space-y-4">
+    <div className="p-6 border-a border-gray-200 space-y-4">
       <div className="flex gap-4 items-center flex-wrap">
         <input
           type="text"

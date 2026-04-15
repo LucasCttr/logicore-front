@@ -6,10 +6,9 @@ interface FilterDriversProps {
   onSearch: (query: string) => void;
   onStatusFilter: (status: 'all' | 'active' | 'inactive') => void;
   onItemsPerPageChange?: (items: number) => void;
-  newButton?: React.ReactNode;
 }
 
-export default function FilterDrivers({ onSearch, onStatusFilter, onItemsPerPageChange, newButton }: FilterDriversProps) {
+export default function FilterDrivers({ onSearch, onStatusFilter, onItemsPerPageChange }: FilterDriversProps) {
   return (
     <div className="p-6 border-b border-gray-200 space-y-4">
       <div className="flex gap-4 items-center flex-wrap">
@@ -40,7 +39,6 @@ export default function FilterDrivers({ onSearch, onStatusFilter, onItemsPerPage
             <option value="100">100 items</option>
           </select>
         )}
-        {newButton}
       </div>
     </div>
   );

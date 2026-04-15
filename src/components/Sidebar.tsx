@@ -6,6 +6,20 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Home, Users, Package, Scan, Truck, Car, MapPin, BoxesIcon, LogOut, User } from 'lucide-react';
 
+function getRolesFromToken(token: string): string[] {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return [];
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const roles = payload.roles || payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    if (!roles) return [];
+    if (Array.isArray(roles)) return roles;
+    return String(roles).split(',').map((s: string) => s.trim());
+  } catch (e) {
+    return [];
+  }
+}
+
 export default function Sidebar() {
   const pathname = usePathname() || '/';
   const [token, setToken] = useState<string | null>(null);
@@ -35,16 +49,38 @@ export default function Sidebar() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  const links = [
+  // Extract roles from JWT token for accurate role checking
+  const roles = token ? getRolesFromToken(token) : [];
+  const isDriver = roles.includes('Driver');
+  const isAdmin = roles.includes('Admin');
+
+  // Show different links based on user role
+  let links = [
     { href: '/', label: 'Home', icon: Home },
-    { href: '/drivers', label: 'Drivers', icon: Users },
-    { href: '/packages', label: 'Packages', icon: Package },
-    { href: '/scanner', label: 'Scanner', icon: Scan },
-    { href: '/shipments', label: 'Shipments', icon: Truck },
-    { href: '/vehicles', label: 'Vehicles', icon: Car },
-    { href: '/locations', label: 'Locations', icon: MapPin },
-    { href: '/users', label: 'Users', icon: User },
   ];
+
+  if (isDriver) {
+    // Driver-only view: shipments, scanner, profile
+    links.push(
+      { href: '/driver/shipments', label: 'My Shipments', icon: Truck },
+      { href: '/driver/scanner', label: 'Scanner', icon: Scan },
+      { href: '/driver/profile', label: 'My Profile', icon: User }
+    );
+  }
+
+  if (isAdmin) {
+    // Admin-only full management
+    links = [
+      { href: '/', label: 'Home', icon: Home },
+      { href: '/drivers', label: 'Drivers', icon: Users },
+      { href: '/packages', label: 'Packages', icon: Package },
+      { href: '/scanner', label: 'Scanner', icon: Scan },
+      { href: '/shipments', label: 'Shipments', icon: Truck },
+      { href: '/vehicles', label: 'Vehicles', icon: Car },
+      { href: '/locations', label: 'Locations', icon: MapPin },
+      { href: '/users', label: 'Users', icon: User },
+    ];
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('token');
