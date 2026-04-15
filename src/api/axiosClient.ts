@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getErrorMessage } from '../lib/errorHandler';
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5074';
 
@@ -34,6 +35,9 @@ api.interceptors.response.use(
   (r) => r,
   async (error) => {
     const originalRequest = error.config;
+    
+    // Add user-friendly message to all errors
+    error.userMessage = getErrorMessage(error);
     
     // Only attempt refresh if we have a 401 and haven't already retried
     if (error.response?.status === 401 && !originalRequest._retry) {

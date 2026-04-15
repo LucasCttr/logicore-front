@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useVehicles } from '../hooks/useVehicles';
 import { useAssignVehicleToDriver } from '../hooks/useDriver';
+import { useErrorMessage } from '../hooks/useErrorMessage';
 import type { Vehicle } from '../api/vehicles';
 
 interface AssignVehicleModalProps {
@@ -23,6 +24,7 @@ export default function AssignVehicleModal({
 }: AssignVehicleModalProps) {
   const { data: vehiclesData, isLoading: vehiclesLoading } = useVehicles();
   const assignMutation = useAssignVehicleToDriver();
+  const { getErrorMessage } = useErrorMessage();
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,7 @@ export default function AssignVehicleModal({
     setError(null);
 
     try {
+      console.log('Assigning vehicle:', { driverId, vehicleId: selectedVehicleId });
       await assignMutation.mutateAsync({
         driverId,
         vehicleId: selectedVehicleId,
@@ -48,8 +51,8 @@ export default function AssignVehicleModal({
       setSelectedVehicleId(null);
       onSuccess?.();
       onClose();
-    } catch (err: any) {
-      setError(err?.message || 'Failed to assign vehicle');
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setIsAssigning(false);
     }

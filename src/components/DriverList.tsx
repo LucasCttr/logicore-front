@@ -3,68 +3,45 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useUpdateDriverStatus } from '../hooks/useDriver';
-import { useDrivers } from '../hooks/useDrivers';
+import { useDriversWithDetails } from '../hooks/useDriversWithDetails';
 import ListContainer from './ListContainer';
 import FilterDrivers from './FilterDrivers';
-import AssignVehicleModal from './AssignVehicleModal';
-import type { Driver } from '../types/drivers';
+import type { DriverDetailsWithUser } from '../types/driverDetails';
+import DriverDetailsModal from './DriverDetailsModal';
 
 export default function DriverList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
-  const { data, isLoading, isError, error, refetch } = useDrivers();
-  const router = useRouter();
-  const update = useUpdateDriverStatus();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<DriverDetailsWithUser | null>(null);
 
-  const handleToggleActive = async (id: string, current?: boolean) => {
-    try {
-      await update.mutateAsync({ id, payload: { isActive: !current } });
-    } catch (e) {
-      // ignore - UI will refresh from react-query
-    }
-  };
+  const router = useRouter();
 
-  const handleOpenAssignModal = (driver: Driver) => {
+  // Convert statusFilter to boolean for API
+  const isActiveFilter = statusFilter === 'all' ? undefined : statusFilter === 'active';
+
+  const { data, isLoading, isError, error, refetch } = useDriversWithDetails(
+    currentPage,
+    itemsPerPage,
+    searchQuery || undefined,
+    isActiveFilter
+  );
+
+  const handleOpenDetailsModal = (driver: DriverDetailsWithUser) => {
     setSelectedDriver(driver);
-    setShowAssignModal(true);
+    setShowDetailsModal(true);
   };
 
-  let items = data?.items ?? [];
+  const items = data?.items ?? [];
+  const totalPages = data?.totalPages ?? 1;
+  const totalItems = data?.totalCount ?? 0;
 
-  // Aplicar filtros
-  items = items.filter((item: any) => {
-    // Filtro de búsqueda
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = 
-      (item.name?.toLowerCase() || '').includes(searchLower) ||
-      (item.fullName?.toLowerCase() || '').includes(searchLower) ||
-      (item.email?.toLowerCase() || '').includes(searchLower) ||
-      (item.phone?.toLowerCase() || '').includes(searchLower);
-
-    // Filtro de estado
-    const matchesStatus = 
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && item.isActive) ||
-      (statusFilter === 'inactive' && !item.isActive);
-
-    return matchesSearch && matchesStatus;
-  });
-
-  // Calcular paginación
-  const totalPages = Math.ceil(items.length / itemsPerPage);
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const endIdx = startIdx + itemsPerPage;
-  const paginatedItems = items.slice(startIdx, endIdx);
-
-  // Reset a página 1 cuando cambian filtros o itemsPerPage
+  // Reset a página 1 cuando cambian filtros pero NO cuando cambia itemsPerPage
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, itemsPerPage]);
+  }, [searchQuery, statusFilter]);
 
   const newButton = (
     <Link href="/drivers/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded whitespace-nowrap">
@@ -88,124 +65,119 @@ export default function DriverList() {
         isEmpty={items.length === 0}
         emptyMessage="No drivers available."
         pagination={
-          items.length > 0
+          totalItems > 0
             ? {
                 currentPage,
                 totalPages,
-                totalItems: items.length,
-                itemsPerPage: itemsPerPage,
-              onPageChange: setCurrentPage,
-            }
-          : undefined
-      }
-    >
-      <table className="w-full">
-        <thead>
-          <tr className="bg-gray-50 border-b">
-            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Driver</th>
-            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">License</th>
-            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Assigned Vehicle</th>
-            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Phone</th>
-            <th className="text-left px-7 py-3 text-sm font-semibold text-gray-700">Status</th>
-            <th className="text-right px-6 py-3 text-sm font-semibold text-gray-700">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginatedItems.map((d, idx) => {
-            const name = d.name ?? d.fullName ?? 'No name';
-            const initials = name.split(' ').map((s: string) => s[0]).slice(0, 2).join('').toUpperCase();
-            return (
-              <tr key={d.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`}>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm">{initials}</div>
-                    <div>
-                      <div className="font-medium text-gray-800">{name}</div>
-                      <div className="text-sm text-gray-500">{d.email ?? ''}</div>
+                totalItems,
+                itemsPerPage,
+                onPageChange: setCurrentPage,
+              }
+            : undefined
+        }
+      >
+        <table className="w-full">
+          <thead>
+            <tr className="bg-gray-50 border-b">
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Driver</th>
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">License</th>
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">License Expiry</th>
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Insurance</th>
+              <th className="text-left px-7 py-3 text-sm font-semibold text-gray-700">Status</th>
+              <th className="text-right px-6 py-3 text-sm font-semibold text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((driver, idx) => {
+              const fullName = `${driver.firstName} ${driver.lastName}`.trim() || 'No name';
+              const initials = fullName
+                .split(' ')
+                .map((s: string) => s[0])
+                .slice(0, 2)
+                .join('')
+                .toUpperCase();
+
+              const licenseExpiry = new Date(driver.licenseExpiry);
+              const insuranceExpiry = new Date(driver.insuranceExpiry);
+              const now = new Date();
+              const isLicenseExpired = licenseExpiry < now;
+              const isInsuranceExpired = insuranceExpiry < now;
+
+              const formatDate = (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+              return (
+                <tr key={driver.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`}>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm">
+                        {initials}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-800">{fullName}</div>
+                        <div className="text-sm text-gray-500">{driver.email}</div>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-gray-600">{d.licenseNumber ?? '-'}</td>
-                <td className="px-6 py-4">
-                  {d.assignedVehicle ? (
-                    <div className="flex flex-col">
-                      {d.assignedVehicle.model || d.assignedVehicle.make ? (
-                        <>
-                          <span className="text-sm font-medium text-gray-800">
-                            {d.assignedVehicle.make && d.assignedVehicle.model
-                              ? `${d.assignedVehicle.make} ${d.assignedVehicle.model}`
-                              : d.assignedVehicle.model || d.assignedVehicle.make}
-                          </span>
-                          <span className="text-xs text-gray-600">{d.assignedVehicle.licensePlate || 'No plate'}</span>
-                        </>
-                      ) : d.assignedVehicle.licensePlate ? (
-                        <>
-                          <span className="text-sm font-medium text-gray-800">{d.assignedVehicle.licensePlate}</span>
-                          <span className="text-xs text-gray-500">No make/model</span>
-                        </>
-                      ) : (
-                        <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">
-                          ⚠️ Needs Update
-                        </span>
-                      )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm">
+                      <div className="font-medium text-gray-800">{driver.licenseNumber}</div>
+                      <div className="text-xs text-gray-500">{driver.licenseType}</div>
                     </div>
-                  ) : (
-                    <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
-                      Unassigned
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className={`text-sm font-medium ${isLicenseExpired ? 'text-red-600' : 'text-gray-600'}`}>
+                      {formatDate(licenseExpiry)}
+                      {isLicenseExpired && <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Expired</span>}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className={`text-sm font-medium ${isInsuranceExpired ? 'text-red-600' : 'text-gray-600'}`}>
+                      {formatDate(insuranceExpiry)}
+                      {isInsuranceExpired && <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Expired</span>}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                        driver.isUserActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                      }`}
+                    >
+                      {driver.isUserActive ? 'Active' : 'Inactive'}
                     </span>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-gray-600">{d.phone ?? '-'}</td>
-                <td className="px-6 py-4">
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${d.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
-                    {d.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right space-x-2">
-                  <button
-                    onClick={() => router.push(`/drivers/${d.id}`)}
-                    className="px-3 py-1 border border-blue-300 text-blue-600 rounded hover:bg-blue-50 text-sm"
-                  >
-                    View
-                  </button>
-                  <button
-                    onClick={() => handleOpenAssignModal(d)}
-                    className="px-3 py-1 border border-purple-300 text-purple-600 rounded hover:bg-purple-50 text-sm"
-                  >
-                    Assign Vehicle
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(d.id, !!d.isActive)}
-                    className={`px-3 py-1 rounded text-white text-sm ${d.isActive ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
-                  >
-                    {d.isActive ? 'Deactivate' : 'Activate'}
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </ListContainer>
+                  </td>
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button
+                      onClick={() => handleOpenDetailsModal(driver)}
+                      className="px-3 py-1 border border-blue-300 text-blue-600 rounded hover:bg-blue-50 text-sm"
+                    >
+                      Details
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </ListContainer>
 
       {selectedDriver && (
-        <AssignVehicleModal
-          isOpen={showAssignModal}
-          driverId={selectedDriver.id}
-          driverName={selectedDriver.name}
+        <DriverDetailsModal
+          isOpen={showDetailsModal}
+          driver={selectedDriver}
           onClose={() => {
-            setShowAssignModal(false);
+            setShowDetailsModal(false);
             setSelectedDriver(null);
           }}
           onSuccess={() => {
-            setShowAssignModal(false);
+            // Add a small delay to ensure backend has persisted changes
+            setTimeout(() => {
+              refetch();
+            }, 500);
+            setShowDetailsModal(false);
             setSelectedDriver(null);
-            refetch();
           }}
         />
       )}
     </>
   );
 }
-
-

@@ -1,8 +1,15 @@
 "use client";
 
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
 
-export default function SectionHeader() {
+interface SectionHeaderProps {
+  title?: string;
+  backHref?: string;
+}
+
+export default function SectionHeader({ title: customTitle, backHref }: SectionHeaderProps) {
   const pathname = usePathname() || '/';
 
   const getTitleFromPath = (path: string): string => {
@@ -13,6 +20,7 @@ export default function SectionHeader() {
     if (path === '/shipments') return 'Shipments';
     if (path === '/vehicles') return 'Vehicles';
     if (path === '/locations') return 'Locations';
+    if (path === '/users') return 'Users';
     if (path === '/admin/users') return 'Users';
     if (path === '/login') return 'Login';
     
@@ -25,11 +33,20 @@ export default function SectionHeader() {
     return 'Page';
   };
 
-  const title = getTitleFromPath(pathname);
+  const title = customTitle || getTitleFromPath(pathname);
 
   return (
     <header className="bg-blue-900 border-b border-gray-700 sticky top-0 z-10">
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 flex items-center gap-3">
+        {backHref && (
+          <Link
+            href={backHref}
+            className="p-2 hover:bg-blue-800 rounded-lg transition"
+            title="Go back"
+          >
+            <ChevronLeft size={20} className="text-white" />
+          </Link>
+        )}
         <h1 className="text-4xl font-light text-white tracking-tight">{title}</h1>
       </div>
     </header>

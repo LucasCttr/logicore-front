@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '../../../src/api/auth';
+import { getErrorMessage } from '../../../src/lib/errorHandler';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function LoginPage() {
         setError('Unexpected server response');
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Login error');
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

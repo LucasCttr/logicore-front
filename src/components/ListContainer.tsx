@@ -33,7 +33,7 @@ export default function ListContainer({
   if (isLoading) {
     return (
       <div className="w-full bg-white rounded-lg shadow ">
-        <div className="text-gray-500">Loading...</div>
+        <div className="text-gray-500 p-4">Loading...</div>
       </div>
     );
   }
@@ -41,7 +41,7 @@ export default function ListContainer({
   if (error) {
     return (
       <div className="w-full bg-white rounded-lg shadow ">
-        <div className="text-red-600">{error}</div>
+        <div className="text-red-600 p-4">{error}</div>
       </div>
     );
   }

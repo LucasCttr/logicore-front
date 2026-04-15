@@ -19,6 +19,21 @@ export async function getAvailableDrivers(): Promise<Driver[]> {
   return payload?.value ?? payload?.Value ?? payload;
 }
 
+// Get drivers with details from DriverDetails table (new endpoint)
+export async function getDriversWithDetails(
+  page: number = 1,
+  pageSize: number = 15,
+  search?: string,
+  isActive?: boolean
+): Promise<any> {
+  const params: any = { page, pageSize };
+  if (search) params.search = search;
+  if (isActive !== undefined) params.isActive = isActive;
+  
+  const res = await api.get('/api/drivers/details', { params });
+  return res.data;
+}
+
 export async function getMyDriverProfile(): Promise<Driver> {
   const res = await api.get('/api/drivers/me');
   const payload: any = res.data;
