@@ -13,8 +13,46 @@ import {
   cancelShipment,
 } from '../api/shipments';
 
+// Helper to get user role from JWT token
+function getUserRoleFromToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const roles = payload.roles || payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    if (!roles) return null;
+    if (Array.isArray(roles)) return roles[0];
+    return String(roles).split(',')[0].trim();
+  } catch (e) {
+    return null;
+  }
+}
+
 export function useShipments(page = 1, pageSize = 10, filters?: Record<string, any>) {
   const { sortBy, sortDir, status, q } = filters ?? {};
+  const userRole = getUserRoleFromToken();
+  
+  // Drivers use /api/shipments/me, admins use /api/shipments
+  if (userRole === 'Driver') {
+    return useQuery<PagedResultDto<Shipment>, Error>({
+      queryKey: ['shipments', 'driver', 'me'],
+      queryFn: async () => {
+        const driverShipments = await getMyShipments();
+        // getMyShipments already normalizes data, just wrap in PagedResultDto for consistency
+        return {
+          items: driverShipments,
+          totalCount: driverShipments.length,
+          pageNumber: 1,
+          pageSize: driverShipments.length,
+        };
+      },
+    });
+  }
+  
+  // Admin endpoint
   return useQuery<PagedResultDto<Shipment>, Error>({
     queryKey: ['shipments', { page, pageSize, sortBy, sortDir, status, q }],
     queryFn: () => getShipments(page, pageSize, sortBy, sortDir, status, q),

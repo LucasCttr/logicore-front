@@ -53,33 +53,39 @@ export default function Sidebar() {
   const roles = token ? getRolesFromToken(token) : [];
   const isDriver = roles.includes('Driver');
   const isAdmin = roles.includes('Admin');
+  const isAuthenticated = !!token;
 
   // Show different links based on user role
-  let links = [
-    { href: '/', label: 'Home', icon: Home },
-  ];
+  let links: any[] = [];
 
-  if (isDriver) {
-    // Driver-only view: shipments, scanner, profile
-    links.push(
-      { href: '/driver/shipments', label: 'My Shipments', icon: Truck },
-      { href: '/driver/scanner', label: 'Scanner', icon: Scan },
-      { href: '/driver/profile', label: 'My Profile', icon: User }
-    );
-  }
-
-  if (isAdmin) {
-    // Admin-only full management
-    links = [
-      { href: '/', label: 'Home', icon: Home },
-      { href: '/drivers', label: 'Drivers', icon: Users },
-      { href: '/packages', label: 'Packages', icon: Package },
-      { href: '/scanner', label: 'Scanner', icon: Scan },
-      { href: '/shipments', label: 'Shipments', icon: Truck },
-      { href: '/vehicles', label: 'Vehicles', icon: Car },
-      { href: '/locations', label: 'Locations', icon: MapPin },
-      { href: '/users', label: 'Users', icon: User },
-    ];
+  // Only show Home and other links if authenticated
+  if (isAuthenticated) {
+    if (isDriver) {
+      // Driver-only view: shipments, scanner, profile
+      links = [
+        { href: '/', label: 'Home', icon: Home },
+        { href: '/driver/shipments', label: 'My Shipments', icon: Truck },
+        { href: '/driver/scanner', label: 'Scanner', icon: Scan },
+        { href: '/driver/profile', label: 'My Profile', icon: User }
+      ];
+    } else if (isAdmin) {
+      // Admin-only full management
+      links = [
+        { href: '/', label: 'Home', icon: Home },
+        { href: '/drivers', label: 'Drivers', icon: Users },
+        { href: '/packages', label: 'Packages', icon: Package },
+        { href: '/scanner', label: 'Scanner', icon: Scan },
+        { href: '/shipments', label: 'Shipments', icon: Truck },
+        { href: '/vehicles', label: 'Vehicles', icon: Car },
+        { href: '/locations', label: 'Locations', icon: MapPin },
+        { href: '/users', label: 'Users', icon: User },
+      ];
+    } else {
+      // Default authenticated user (no specific role)
+      links = [
+        { href: '/', label: 'Home', icon: Home },
+      ];
+    }
   }
 
   const handleLogout = () => {

@@ -2,6 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import DriverDashboard from '../components/DriverDashboard';
+import AdminDashboard from '../components/AdminDashboard';
+import { getDriverById } from '../api/drivers';
+import type { AssignedVehicleInfo } from '../types/drivers';
 
 function getRolesFromToken(token: string): string[] {
   try {
@@ -17,8 +20,21 @@ function getRolesFromToken(token: string): string[] {
   }
 }
 
+function getUserIdFromToken(token: string): string | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.sub || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export default function Home() {
   const [roles, setRoles] = useState<string[]>([]);
+  const [assignedVehicle, setAssignedVehicle] = useState<AssignedVehicleInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -27,9 +43,31 @@ export default function Home() {
         if (token) {
           const extractedRoles = getRolesFromToken(token);
           setRoles(extractedRoles);
+
+          // If user is a driver, fetch their vehicle info
+          if (extractedRoles.includes('Driver')) {
+            const userId = getUserIdFromToken(token);
+            if (userId) {
+              getDriverById(userId)
+                .then(driver => {
+                  if (driver?.assignedVehicle) {
+                    setAssignedVehicle(driver.assignedVehicle);
+                  }
+                })
+                .catch(err => console.error('Error fetching driver:', err))
+                .finally(() => setIsLoading(false));
+            } else {
+              setIsLoading(false);
+            }
+          } else {
+            setIsLoading(false);
+          }
+        } else {
+          setIsLoading(false);
         }
       } catch (e) {
         setRoles([]);
+        setIsLoading(false);
       }
     }
   }, []);
@@ -41,24 +79,21 @@ export default function Home() {
   if (isDriver && !isAdmin) {
     return (
       <main className="w-full h-full">
-        <DriverDashboard shipmentCount={0} vehicleAssigned={true} />
+        <DriverDashboard shipmentCount={0} vehicleAssigned={!!assignedVehicle} assignedVehicle={assignedVehicle} />
       </main>
     );
   }
 
-  // Default admin view
+  // For admin users, show the admin dashboard
+  if (isAdmin) {
+    return <AdminDashboard />;
+  }
+
+  // Default empty view for unauthenticated users
   return (
     <main className="p-10">
-      <h1 className="text-3xl font-bold text-primary">LogiCore Admin Dashboard</h1>
-      <button className="btn btn-primary mt-4">This is a DaisyUI button</button>
-      
-      <div className="stats shadow mt-8 block">
-        <div className="stat">
-          <div className="stat-title">Total Shipments</div>
-          <div className="stat-value text-primary">412</div>
-          <div className="stat-desc">21% more than last month</div>
-        </div>
-      </div>
+      <h1 className="text-3xl font-bold">Welcome to LogiCore</h1>
+      <p className="text-gray-600 mt-4">Please log in to access the dashboard</p>
     </main>
   );
 }

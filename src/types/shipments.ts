@@ -13,6 +13,8 @@ export type Shipment = {
   vehicleMaxWeightCapacity?: number | null;
   vehicleMaxVolumeCapacity?: number | null;
   packageIds?: string[] | null;
+  origin?: string | null;
+  destination?: string | null;
   [key: string]: any;
 };
 

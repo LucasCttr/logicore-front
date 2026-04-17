@@ -1,5 +1,6 @@
 import Shipment, { AssignDriverDto, CreateShipmentDto, PagedResultDto } from '../types/shipments';
 import api from './axiosClient';
+import { normalizeShipments } from './shipmentMappers';
 
 
 export async function createShipment(payload: CreateShipmentDto): Promise<Shipment> {
@@ -18,19 +19,25 @@ export async function getShipments(
 ): Promise<PagedResultDto<Shipment>> {
   const res = await api.get('/api/shipments', { params: { page, pageSize, sortBy, sortDir, status, q } });
   // Backend returns Result<PagedResultDto<Shipment>>, extract the value
-  return res.data?.value ?? res.data;
+  const result = res.data?.value ?? res.data;
+  return {
+    ...result,
+    items: normalizeShipments(result.items ?? []),
+  };
 }
 
 export async function getMyShipments(): Promise<Shipment[]> {
   const res = await api.get('/api/shipments/me');
   // Backend returns Result<IEnumerable<ShipmentDto>>, extract the value
-  return res.data?.value ?? res.data;
+  const shipments = res.data?.value ?? res.data;
+  return normalizeShipments(Array.isArray(shipments) ? shipments : []);
 }
 
 export async function getShipmentById(id: string): Promise<Shipment> {
   const res = await api.get(`/api/shipments/${id}`);
   // Backend returns Result<ShipmentDto>, extract the value
-  return res.data?.value ?? res.data;
+  const shipment = res.data?.value ?? res.data;
+  return normalizeShipments([shipment])[0];
 }
 
 export async function addPackageToShipment(id: string, payload: { packageId: string }): Promise<Shipment> {

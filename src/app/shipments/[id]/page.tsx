@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AuthGuard from '../../../components/AuthGuard';
 import api from '../../../api/axiosClient';
+import { getDriverById } from '../../../api/drivers';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 
@@ -32,14 +33,50 @@ interface ShipmentDetails {
   [key: string]: any;
 }
 
+interface Driver {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  email?: string;
+}
+
+function getRolesFromToken(token: string): string[] {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return [];
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const roles = payload.roles || payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    if (!roles) return [];
+    if (Array.isArray(roles)) return roles;
+    return String(roles).split(',').map((s: string) => s.trim());
+  } catch (e) {
+    return [];
+  }
+}
+
+function getUserIdFromToken(token: string): string | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.sub || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export default function ShipmentDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const shipmentId = params.id as string;
 
   const [shipment, setShipment] = useState<ShipmentDetails | null>(null);
+  const [driver, setDriver] = useState<Driver | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [currentDriverId, setCurrentDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchShipment = async () => {
@@ -51,18 +88,57 @@ export default function ShipmentDetailsPage() {
           return;
         }
 
+        // Get current user role and ID
+        const roles = getRolesFromToken(token);
+        setCurrentUserRole(roles[0] || null);
+        
+        const userId = getUserIdFromToken(token);
+        if (userId && roles.includes('Driver')) {
+          // If user is a driver, get their driver ID
+          try {
+            const driverData = await getDriverById(userId);
+            setCurrentDriverId(driverData?.id || null);
+          } catch (err) {
+            console.error('Error getting driver ID:', err);
+          }
+        }
+
         const response = await api.get(`/api/shipments/${shipmentId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
+        let shipmentData: ShipmentDetails | null = null;
         if (response.data?.isSuccess) {
-          setShipment(response.data.value);
+          shipmentData = response.data.value;
         } else if (response.data?.value) {
-          setShipment(response.data.value);
+          shipmentData = response.data.value;
         } else {
           setError(response.data?.error || 'Failed to load shipment');
+          return;
+        }
+
+        // Validate access: Admin can see all, Driver can only see their own
+        if (roles.includes('Driver') && !roles.includes('Admin')) {
+          if (currentDriverId && shipmentData?.driverId !== currentDriverId) {
+            setError('You do not have permission to view this shipment');
+            setTimeout(() => router.push('/shipments'), 2000);
+            return;
+          }
+        }
+
+        setShipment(shipmentData);
+
+        // Fetch driver details if driverId exists
+        if (shipmentData?.driverId) {
+          try {
+            const driverData = await getDriverById(shipmentData.driverId);
+            setDriver(driverData);
+          } catch (driverError) {
+            console.error('Error loading driver details:', driverError);
+            // Continue without driver details if error
+          }
         }
       } catch (err: any) {
         setError(err?.response?.data?.error || 'Error loading shipment');
@@ -74,7 +150,7 @@ export default function ShipmentDetailsPage() {
     if (shipmentId) {
       fetchShipment();
     }
-  }, [shipmentId, router]);
+  }, [shipmentId, router, currentDriverId]);
 
   const getStatusLabel = (status: number): string => {
     switch (status) {
@@ -122,7 +198,7 @@ export default function ShipmentDetailsPage() {
   };
 
   return (
-    <AuthGuard requireRoles="Admin">
+    <AuthGuard requireRoles={["Admin", "Driver"]}>
       <div className="p-6 max-w-6xl mx-auto">
         {/* Back Button */}
         <div className="mb-6">
@@ -212,8 +288,13 @@ export default function ShipmentDetailsPage() {
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Driver ID</label>
-                    <p className="text-lg text-gray-900 mt-1 font-mono">{shipment.driverId || '-'}</p>
+                    <label className="text-sm font-medium text-gray-600">Driver</label>
+                    <p className="text-lg text-gray-900 mt-1">
+                      {driver 
+                        ? `${driver.firstName || ''} ${driver.lastName || ''}`.trim() || driver.name || '-'
+                        : shipment.driverId ? shipment.driverId.substring(0, 8) + '...' : '-'
+                      }
+                    </p>
                   </div>
                 </div>
               </div>
