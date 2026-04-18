@@ -9,11 +9,12 @@ import { useCreateShipment } from '../hooks/useShipments';
 import { usePackages } from '../hooks/usePackages';
 import { useDrivers } from '../hooks/useDrivers';
 import { useLocations } from '../hooks/useLocations';
-
-import type { CreateShipmentDto } from '../types/shipments';
+import { useVehicles } from '../hooks/useVehicles';
+import type { CreateShipmentDto, ShipmentType } from '../types/shipments';
 import type { LocationDto } from '../types/locations';
 import { useRouter } from 'next/navigation';
-import { useVehicles } from '../hooks/useVehicles';
+
+type FormStep = 'setup' | 'packages' | 'confirm';
 
 export default function ShipmentForm() {
   const router = useRouter();
@@ -23,16 +24,20 @@ export default function ShipmentForm() {
   const { data: vehiclesData } = useVehicles();
   const { data: locationsData } = useLocations();
 
+  const [formStep, setFormStep] = useState<FormStep>('setup');
   const [selectedPackages, setSelectedPackages] = useState<Set<string>>(new Set());
-  const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [shipmentType, setShipmentType] = useState<'depot-to-depot' | 'last-mile'>('last-mile');
+  
+  // Step 1: Shipment Setup
+  const [shipmentType, setShipmentType] = useState<ShipmentType | null>(null);
+  const [selectedDriverId, setSelectedDriverId] = useState<string>('');
+  const [selectedDestinationId, setSelectedDestinationId] = useState<string>('');
 
   const resolver = zodResolver(createShipmentSchema) as Resolver<CreateShipmentSchema>;
-  const { register, handleSubmit, formState, watch, setValue } = useForm<CreateShipmentSchema>({
+  const { register, handleSubmit, formState, setValue } = useForm<CreateShipmentSchema>({
     resolver,
-    mode: 'onBlur', // Validate on blur to avoid constant errors
+    mode: 'onBlur',
     defaultValues: {
       driverId: '',
       vehicleId: '',
@@ -41,28 +46,77 @@ export default function ShipmentForm() {
     },
   });
 
-  // Filter packages to show only Pending (0) and AtDepot (4) ones
-  const packages = packagesData?.items?.filter(p => {
-    const status = Number(p.status);
-    return status === 0 || status === 4; // Pending or At Depot
-  }) ?? [];
+  // Get base data
+  const allPackages = packagesData?.items ?? [];
   const drivers = driversData?.items ?? [];
   const vehicles = vehiclesData?.items ?? [];
   const locations = Array.isArray(locationsData) ? locationsData : [];
 
-  // Watch form values for debugging
-  const formValues = watch();
-  const selectedDriverId = watch('driverId');
+  // Dynamic package filtering based on shipment type
+  const getFilteredPackages = (): typeof allPackages => {
+    if (shipmentType === null || shipmentType === undefined) return [];
+
+    return allPackages.filter(p => {
+      const status = Number(p.status);
+      
+      switch (shipmentType) {
+        case 0: // Pickup - only Pending packages
+          return status === 0;
+        case 1: // Transfer (Depot-to-Depot) - only AtDepot packages
+          return status === 4;
+        case 2: // LastMile - Pending or AtDepot
+          return status === 0 || status === 4;
+        default:
+          return false;
+      }
+    });
+  };
+
+  const packages = getFilteredPackages();
+  const selectedDriver = drivers.find(d => d.id === selectedDriverId);
 
   // Auto-assign vehicle when driver is selected
   useEffect(() => {
-    if (selectedDriverId) {
-      const selectedDriver = drivers.find(d => d.id === selectedDriverId);
-      if (selectedDriver?.assignedVehicleId) {
-        setValue('vehicleId', selectedDriver.assignedVehicleId);
-      }
+    if (selectedDriverId && selectedDriver?.assignedVehicleId) {
+      setValue('vehicleId', selectedDriver.assignedVehicleId);
     }
-  }, [selectedDriverId, drivers, setValue]);
+  }, [selectedDriverId, selectedDriver, setValue]);
+
+  // Validate step 1 (setup): type, driver, and optional destination
+  const canProceedToStep2 = (): boolean => {
+    if (shipmentType === null || shipmentType === undefined) return false;
+    if (!selectedDriverId) return false;
+    if (shipmentType === 1 && !selectedDestinationId) return false; // Transfer requires destination
+    return true;
+  };
+
+  // Handle proceeding to package selection
+  const handleProceedToPackages = async () => {
+    if (!canProceedToStep2()) {
+      setSubmitError('Please select shipment type, driver, and destination (if required)');
+      return;
+    }
+    
+    if (packages.length === 0) {
+      const packageType = shipmentType === 0 ? 'Pending' : shipmentType === 1 ? 'AtDepot' : 'available';
+      setSubmitError(`No ${packageType} packages found for this shipment type`);
+      return;
+    }
+
+    setSubmitError(null);
+    setSelectedPackages(new Set());
+    
+    // Set form defaults for later submission
+    setValue('driverId', selectedDriverId);
+    if (selectedDriver?.assignedVehicleId) {
+      setValue('vehicleId', selectedDriver.assignedVehicleId);
+    }
+    if (shipmentType === 1 && selectedDestinationId) {
+      setValue('destinationLocationId', selectedDestinationId);
+    }
+    
+    setFormStep('packages');
+  };
 
   // Toggle package selection
   const togglePackage = (packageId: string) => {
@@ -75,29 +129,14 @@ export default function ShipmentForm() {
     setSelectedPackages(newSet);
   };
 
-  // Open modal when "Armar Viaje" is clicked
-  const handleArmShipment = () => {
-    if (selectedPackages.size === 0) {
-      setSubmitError('Please select at least one package');
-      return;
-    }
-    setSubmitError(null);
-    setShowModal(true);
-  };
-
-  // Handle form submission from modal
+  // Handle form submission for final confirmation
   const onSubmit = async (data: CreateShipmentSchema) => {
-    console.log('Form data received:', data);
-    console.log('Form errors:', formState.errors);
-    
     try {
-      // Validate packages are selected
       if (selectedPackages.size === 0) {
         setSubmitError('Please select at least one package');
         return;
       }
 
-      // Validate date is in future
       const deliveryDate = new Date(data.estimatedDelivery);
       if (isNaN(deliveryDate.getTime())) {
         setSubmitError('Invalid date format. Please select a valid date.');
@@ -114,12 +153,11 @@ export default function ShipmentForm() {
         vehicleId: data.vehicleId,
         packageIds: Array.from(selectedPackages),
         estimatedDelivery: deliveryDate.toISOString(),
-        destinationLocationId: shipmentType === 'depot-to-depot' && data.destinationLocationId 
+        type: shipmentType!,
+        destinationLocationId: shipmentType === 1 && data.destinationLocationId 
           ? parseInt(data.destinationLocationId) 
           : null,
       };
-
-      console.log('Shipment payload:', payload);
 
       setSubmitting(true);
       setSubmitError(null);
@@ -130,452 +168,378 @@ export default function ShipmentForm() {
         await new Promise<void>((resolve, reject) => {
           mutation.mutate(payload, {
             onSuccess() {
-              console.log('Shipment created successfully');
               resolve();
             },
             onError(err: any) {
-              console.error('Mutation error:', err);
               reject(err);
             },
           });
         });
       }
-      // Reset form and redirect
+      
       setSelectedPackages(new Set());
-      setShowModal(false);
+      setFormStep('setup');
       router.push('/shipments');
     } catch (err: any) {
-      console.error('Submission error:', err);
       const errorMessage = err?.response?.data?.message || err?.message || 'Error creating shipment';
       setSubmitError(errorMessage);
+    } finally {
       setSubmitting(false);
     }
   };
 
-  // Helper to convert status code to label
-  const getStatusLabel = (status: number | string | null | undefined) => {
-    if (!status && status !== 0) return 'Unknown';
-    if (typeof status === 'string' && isNaN(Number(status))) return status;
+  const getStatusLabel = (status: number | string | null) => {
     const statusMap: Record<number, string> = {
       0: 'Pending',
       1: 'In Transit',
-      2: 'Delivered',
-      3: 'Canceled',
+      2: 'Dispatched',
+      3: 'Arrived',
       4: 'At Depot',
-      5: 'Delivered to Center',
-      6: 'Returned'
+      5: 'Delivered',
+      6: 'Returned',
+      7: 'Collected',
     };
     return statusMap[Number(status)] || 'Unknown';
   };
 
-  // Helper to detect common destination from selected packages
-  const getCommonDestination = (): string | null => {
-    if (selectedPackages.size === 0) return null;
-    
-    const selectedPkgs = packages.filter(p => selectedPackages.has(p.id));
-    const destinations = selectedPkgs
-      .map(p => p.destinationAddress)
-      .filter((d): d is string => Boolean(d && d.trim() !== ''));
-    
-    if (destinations.length === 0) return null;
-    
-    // Check if all have the same destination
-    const firstDestination = destinations[0];
-    const allSame = destinations.every(d => d === firstDestination);
-    
-    return allSame ? firstDestination : null;
+  const getStatusColor = (status: number | string | null) => {
+    const colorMap: Record<number, string> = {
+      0: 'bg-yellow-100 text-yellow-800',
+      1: 'bg-orange-100 text-orange-800',
+      2: 'bg-blue-100 text-blue-800',
+      3: 'bg-green-100 text-green-800',
+      4: 'bg-purple-100 text-purple-800',
+      5: 'bg-green-100 text-green-800',
+      6: 'bg-red-100 text-red-800',
+      7: 'bg-cyan-100 text-cyan-800',
+    };
+    return colorMap[Number(status)] || 'bg-gray-100 text-gray-800';
   };
-
-  const commonDestination = getCommonDestination();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+      <div className="max-w-4xl mx-auto">
+        {/* Progress Indicator */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2 rounded-lg">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
+          <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-bold text-slate-900">Create Shipment</h1>
+            <div className="text-sm font-semibold text-slate-600">
+              Step {formStep === 'setup' ? 1 : formStep === 'packages' ? 2 : 3} of 3
+            </div>
           </div>
-          <p className="text-slate-600 ml-11">Select packages and assign a driver to create your shipment</p>
+          
+          {/* Step indicator */}
+          <div className="flex gap-2">
+            <div className={`flex-1 h-2 rounded-full transition-colors ${formStep === 'setup' || formStep === 'packages' || formStep === 'confirm' ? 'bg-blue-600' : 'bg-slate-200'}`}></div>
+            <div className={`flex-1 h-2 rounded-full transition-colors ${formStep === 'packages' || formStep === 'confirm' ? 'bg-blue-600' : 'bg-slate-200'}`}></div>
+            <div className={`flex-1 h-2 rounded-full transition-colors ${formStep === 'confirm' ? 'bg-blue-600' : 'bg-slate-200'}`}></div>
+          </div>
         </div>
 
-        {/* Packages Selection Table */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200 mb-6">
-          {/* Table Header Info */}
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">📦 Available Packages</h2>
-                <p className="text-sm text-slate-600 mt-1">Select the packages you want to include in this shipment</p>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-blue-700">{packages.length}</p>
-                <p className="text-xs text-slate-600">available packages</p>
+        {/* Error Alert */}
+        {submitError && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 animate-in fade-in">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <div className="flex-1">
+                <p className="font-semibold">Error</p>
+                <p className="text-sm mt-1">{submitError}</p>
               </div>
             </div>
           </div>
+        )}
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="w-12 px-6 py-4 text-left">
-                    <input
-                      type="checkbox"
-                      checked={selectedPackages.size === packages.length && packages.length > 0}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedPackages(new Set(packages.map(p => p.id)));
-                        } else {
-                          setSelectedPackages(new Set());
-                        }
-                      }}
-                      className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                    />
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tracking Number</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Origin Address</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Destination Address</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Weight</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {packages.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
-                      <svg className="mx-auto h-12 w-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m0 0l8 4m-8-4v10l8 4m0-10l8 4m-8-4v10M8 5v10m8-10v10" />
-                      </svg>
-                      <p className="text-slate-600 font-medium">No packages available</p>
-                      <p className="text-sm text-slate-500 mt-1">All packages have been shipped or are unavailable</p>
-                    </td>
-                  </tr>
-                ) : (
-                  packages.map(pkg => (
-                    <tr key={pkg.id} className="hover:bg-blue-50 transition-colors duration-150 cursor-pointer">
-                      <td className="px-6 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedPackages.has(pkg.id)}
-                          onChange={() => togglePackage(pkg.id)}
-                          className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                          {pkg.trackingNumber}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-700">{pkg.originAddress || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-slate-700">{pkg.destinationAddress || '-'}</td>
-                      <td className="px-6 py-4 text-sm font-semibold text-slate-900">{pkg.weight} kg</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
-                          🟡 {getStatusLabel(pkg.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Table Footer */}
-          <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-t border-slate-200 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold">
-                {selectedPackages.size}
+        {/* STEP 1: Setup (Type, Driver, Destination) */}
+        {formStep === 'setup' && (
+          <div className="bg-white rounded-lg shadow-lg p-8 border border-slate-200">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Shipment Details</h2>
+            
+            {/* Type Selection */}
+            <div className="mb-8">
+              <label className="block text-sm font-semibold text-slate-900 mb-4">📦 Shipment Type *</label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { type: 0, label: 'Pickup', desc: 'Collect packages from locations' },
+                  { type: 2, label: 'Last-Mile', desc: 'Final delivery to customers' },
+                  { type: 1, label: 'Depot-to-Depot', desc: 'Inter-depot transfer' },
+                ].map(({ type, label, desc }) => (
+                  <button
+                    key={type}
+                    onClick={() => setShipmentType(type as ShipmentType)}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      shipmentType === type
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-slate-200 hover:border-blue-400'
+                    }`}
+                  >
+                    <p className="font-semibold text-slate-900">{label}</p>
+                    <p className="text-sm text-slate-600 mt-1">{desc}</p>
+                  </button>
+                ))}
               </div>
-              <span className="text-slate-700">
-                of <span className="font-semibold">{packages.length}</span> packages selected
-              </span>
             </div>
+
+            {/* Driver Selection */}
+            <div className="mb-8">
+              <label className="block text-sm font-semibold text-slate-900 mb-3">👨‍✈️ Driver *</label>
+              <select
+                value={selectedDriverId}
+                onChange={(e) => setSelectedDriverId(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-slate-900 bg-white transition-colors duration-150"
+              >
+                <option value="">Select a driver...</option>
+                {drivers.map((driver) => (
+                  <option key={driver.id} value={driver.id}>
+                    {driver.name} {driver.assignedVehicleId ? '🚗' : ''}
+                  </option>
+                ))}
+              </select>
+              {selectedDriver && (
+                <p className="text-sm text-slate-600 mt-2">
+                  🚙 Vehicle: {selectedDriver.assignedVehicleId ? vehicles.find(v => v.id === selectedDriver.assignedVehicleId)?.licensePlate || 'No plate' : 'No vehicle assigned'}
+                </p>
+              )}
+            </div>
+
+            {/* Destination (conditional for Transfer) */}
+            {shipmentType === 1 && (
+              <div className="mb-8">
+                <label className="block text-sm font-semibold text-slate-900 mb-3">📍 Destination Depot *</label>
+                <select
+                  value={selectedDestinationId}
+                  onChange={(e) => setSelectedDestinationId(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-slate-900 bg-white transition-colors duration-150"
+                >
+                  <option value="">Select a destination depot...</option>
+                  {locations.map((location: LocationDto) => (
+                    <option key={location.id} value={location.id}>
+                      {location.name} - {location.city}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Available Packages Info */}
+            {shipmentType !== null && shipmentType !== undefined && (
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-6">
+                <p className="text-sm text-slate-600">📊 Available packages:</p>
+                <p className="text-2xl font-bold text-blue-600 mt-1">{packages.length}</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {shipmentType === 0 ? 'Pending packages' : shipmentType === 1 ? 'At Depot packages' : 'Pending or At Depot packages'}
+                </p>
+              </div>
+            )}
+
+            {/* Action Button */}
             <button
-              type="button"
-              onClick={handleArmShipment}
-              disabled={selectedPackages.size === 0}
-              className={`px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
-                selectedPackages.size === 0
+              onClick={handleProceedToPackages}
+              disabled={!canProceedToStep2()}
+              className={`w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                !canProceedToStep2()
                   ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:shadow-lg hover:from-blue-700 hover:to-blue-800 active:scale-95'
+                  : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:shadow-lg active:scale-95'
               }`}
             >
-              <span>Continue</span>
+              <span>Next: Select Packages</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </button>
           </div>
-        </div>
+        )}
 
-      {/* Destination Suggestion */}
-      {selectedPackages.size > 0 && commonDestination && (
-        <div className="bg-white rounded-lg shadow-md border border-emerald-200 overflow-hidden mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border-b border-emerald-200 px-6 py-4 flex items-start gap-3">
-            <div className="flex-shrink-0">
-              <svg className="w-6 h-6 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+        {/* STEP 2: Package Selection */}
+        {formStep === 'packages' && (
+          <div className="space-y-6">
+            {/* Back Button */}
+            <button
+              onClick={() => setFormStep('setup')}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-emerald-900 text-lg">Destination Detected</h3>
-              <p className="text-sm text-emerald-700 mt-1">
-                All {selectedPackages.size} selected packages are going to the same place
-              </p>
-              <div className="mt-3 flex items-center gap-3 bg-white rounded-lg p-3 border border-emerald-300">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                </svg>
-                <p className="font-semibold text-emerald-900 text-sm">{commonDestination}</p>
+              Back
+            </button>
+
+            {/* Packages Selection */}
+            <div className="bg-white rounded-lg shadow-lg border border-slate-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 px-6 py-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-slate-900">Select Packages</h2>
+                    <p className="text-sm text-slate-600 mt-1">{selectedPackages.size} selected</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-blue-700">{packages.length}</p>
+                    <p className="text-xs text-slate-600">available packages</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="w-12 px-6 py-4 text-left">
+                        <input
+                          type="checkbox"
+                          checked={selectedPackages.size === packages.length && packages.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedPackages(new Set(packages.map(p => p.id)));
+                            } else {
+                              setSelectedPackages(new Set());
+                            }
+                          }}
+                          className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tracking</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Origin</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Destination</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Weight</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {packages.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center">
+                          <p className="text-slate-600 font-medium">No packages available</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      packages.map((pkg) => (
+                        <tr key={pkg.id} className="hover:bg-slate-50">
+                          <td className="px-6 py-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedPackages.has(pkg.id)}
+                              onChange={() => togglePackage(pkg.id)}
+                              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm font-mono text-slate-900">{pkg.trackingNumber}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{pkg.originAddress}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{pkg.destinationAddress}</td>
+                          <td className="px-6 py-4 text-sm text-slate-900">{pkg.weight || 'N/A'}kg</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(pkg.status ?? 0)}`}>
+                              {getStatusLabel(pkg.status ?? 0)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="bg-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold">
+                    {selectedPackages.size}
+                  </div>
+                  <span className="text-slate-700">of {packages.length} packages selected</span>
+                </div>
+                <button
+                  onClick={() => setFormStep('confirm')}
+                  disabled={selectedPackages.size === 0}
+                  className={`px-6 py-2.5 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                    selectedPackages.size === 0
+                      ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:shadow-lg active:scale-95'
+                  }`}
+                >
+                  <span>Next: Confirm</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
+        {/* STEP 3: Confirmation & Delivery Date */}
+        {formStep === 'confirm' && (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Back Button */}
+            <button
+              type="button"
+              onClick={() => setFormStep('packages')}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95 duration-300">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-6 rounded-t-2xl">
-              <div className="flex items-center gap-3">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Assign Driver</h2>
-                  <p className="text-blue-100 text-sm mt-1">Complete the shipment details</p>
+            <div className="bg-white rounded-lg shadow-lg p-8 border border-slate-200">
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Confirm Details</h2>
+
+              {/* Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="bg-slate-50 rounded-lg p-4">
+                  <p className="text-sm text-slate-600">Type</p>
+                  <p className="text-lg font-semibold text-slate-900 mt-1">
+                    {shipmentType === 0 ? '📦 Pickup' : shipmentType === 1 ? '🏢 Depot-to-Depot' : '🚪 Last-Mile'}
+                  </p>
                 </div>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-5">
-              {/* Packages Summary */}
-              <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
-                <div className="bg-blue-600 rounded-lg p-2 flex-shrink-0 mt-0.5">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M5 9V7a2 2 0 012-2h6a2 2 0 012 2v2M5 9c0 1.657-.895 3-2 3s-2-1.343-2-3m0 0V5c0-1.657.895-3 2-3s2 1.343 2 3m0 0h6m0 0v2m0-2c0-1.657.895-3 2-3s2 1.343 2 3m0 0v0h0m0 0c0 1.657-.895 3-2 3s-2-1.343-2-3m0 0V7" />
-                  </svg>
+                <div className="bg-slate-50 rounded-lg p-4">
+                  <p className="text-sm text-slate-600">Driver</p>
+                  <p className="text-lg font-semibold text-slate-900 mt-1">{selectedDriver?.name}</p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Packages Summary</p>
-                  <p className="text-lg font-bold text-blue-900 mt-1">{selectedPackages.size}</p>
-                  <p className="text-xs text-blue-700 mt-1">package{selectedPackages.size !== 1 ? 's' : ''} selected</p>
-                  {commonDestination && (
-                    <div className="mt-3 pt-3 border-t border-blue-200">
-                      <p className="text-xs text-blue-600 mb-1">📍 Destination:</p>
-                      <p className="text-sm font-semibold text-blue-900 line-clamp-2">{commonDestination}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Shipment Type Selection */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-3">🚚 Shipment Type</label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 p-3 rounded-lg border-2 border-slate-200 hover:border-blue-400 cursor-pointer transition-colors duration-150" style={{
-                    borderColor: shipmentType === 'last-mile' ? 'rgb(59, 130, 246)' : undefined,
-                    backgroundColor: shipmentType === 'last-mile' ? 'rgb(239, 246, 255)' : 'transparent'
-                  }}>
-                    <input
-                      type="radio"
-                      value="last-mile"
-                      checked={shipmentType === 'last-mile'}
-                      onChange={(e) => setShipmentType(e.target.value as 'last-mile')}
-                      className="w-4 h-4 accent-blue-600 cursor-pointer"
-                    />
-                    <div>
-                      <p className="font-semibold text-slate-900">Last-Mile Delivery</p>
-                      <p className="text-xs text-slate-600">Door-to-door delivery to customers</p>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 p-3 rounded-lg border-2 border-slate-200 hover:border-blue-400 cursor-pointer transition-colors duration-150" style={{
-                    borderColor: shipmentType === 'depot-to-depot' ? 'rgb(59, 130, 246)' : undefined,
-                    backgroundColor: shipmentType === 'depot-to-depot' ? 'rgb(239, 246, 255)' : 'transparent'
-                  }}>
-                    <input
-                      type="radio"
-                      value="depot-to-depot"
-                      checked={shipmentType === 'depot-to-depot'}
-                      onChange={(e) => setShipmentType(e.target.value as 'depot-to-depot')}
-                      className="w-4 h-4 accent-blue-600 cursor-pointer"
-                    />
-                    <div>
-                      <p className="font-semibold text-slate-900">Depot-to-Depot</p>
-                      <p className="text-xs text-slate-600">Transport between distribution centers</p>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Error Messages */}
-              {submitError && (
-                <div className="p-4 bg-red-50 border-l-4 border-red-400 rounded-lg">
-                  <div className="flex gap-3">
-                    <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                    <div>
-                      <p className="font-semibold text-red-800">Error</p>
-                      <p className="text-sm text-red-700 mt-1">{submitError}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {Object.keys(formState.errors).length > 0 && (
-                <div className="p-4 bg-amber-50 border-l-4 border-amber-400 rounded-lg">
-                  <div className="flex gap-3">
-                    <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    <div>
-                      <p className="font-semibold text-amber-800">Validation Errors</p>
-                      <ul className="list-disc list-inside mt-2 space-y-1">
-                        {Object.entries(formState.errors).map(([field, error]: any) => (
-                          <li key={field} className="text-sm text-amber-700">{field}: {error?.message || 'Invalid'}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Form Fields */}
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {/* Driver Select */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">👨‍✈️ Driver *</label>
-                  <select
-                    {...register('driverId')}
-                    className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-slate-900 bg-white transition-colors duration-150"
-                    defaultValue=""
-                  >
-                    <option value="">Select a driver...</option>
-                    {drivers.map(driver => (
-                      <option key={driver.id} value={driver.id}>
-                        {driver.firstName || driver.lastName ? `${driver.firstName ?? ''} ${driver.lastName ?? ''}`.trim() : driver.name}
-                      </option>
-                    ))}
-                  </select>
-                  {formState.errors.driverId && (
-                    <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
-                      <span>⚠️</span> {String(formState.errors.driverId.message)}
+                {shipmentType === 1 && selectedDestinationId && (
+                  <div className="bg-slate-50 rounded-lg p-4">
+                    <p className="text-sm text-slate-600">Destination</p>
+                    <p className="text-lg font-semibold text-slate-900 mt-1">
+                      {locations.find(l => String(l.id) === selectedDestinationId)?.name}
                     </p>
-                  )}
-                </div>
-
-                {/* Vehicle Display */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">🚗 Assigned Vehicle</label>
-                  <input {...register('vehicleId')} type="hidden" />
-                  <div className="px-4 py-3 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200">
-                    {selectedDriverId && drivers.find(d => d.id === selectedDriverId)?.assignedVehicle ? (
-                      <div className="flex items-start gap-3">
-                        <svg className="w-5 h-5 text-slate-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v4h8v-4zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                        </svg>
-                        <div className="flex-1">
-                          <p className="font-bold text-slate-900">{drivers.find(d => d.id === selectedDriverId)?.assignedVehicle?.licensePlate}</p>
-                          <p className="text-xs text-slate-600 mt-1">
-                            {drivers.find(d => d.id === selectedDriverId)?.assignedVehicle?.make} {drivers.find(d => d.id === selectedDriverId)?.assignedVehicle?.model}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-slate-500 italic">👆 Select a driver to see their assigned vehicle</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Date Input */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">📅 Estimated Delivery Date *</label>
-                  <input
-                    type="datetime-local"
-                    {...register('estimatedDelivery')}
-                    className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-slate-900 bg-white transition-colors duration-150"
-                  />
-                  {formState.errors.estimatedDelivery && (
-                    <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
-                      <span>⚠️</span> {String(formState.errors.estimatedDelivery.message)}
-                    </p>
-                  )}
-                </div>
-
-                {/* Destination Location (conditional) */}
-                {shipmentType === 'depot-to-depot' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">📍 Destination Location</label>
-                    <select
-                      {...register('destinationLocationId')}
-                      className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-slate-900 bg-white transition-colors duration-150"
-                      defaultValue=""
-                    >
-                      <option value="">Select a location...</option>
-                      {locations.map((location: LocationDto) => {
-                        const address = [location.addressLine1, location.city, location.postalCode]
-                          .filter(Boolean)
-                          .join(', ');
-                        return (
-                          <option key={location.id} value={location.id}>
-                            {location.name} - {address}
-                          </option>
-                        );
-                      })}
-                    </select>
-                    {formState.errors.destinationLocationId && (
-                      <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
-                        <span>⚠️</span> {String(formState.errors.destinationLocationId.message)}
-                      </p>
-                    )}
                   </div>
                 )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 justify-end pt-6 border-t border-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="px-5 py-2.5 border-2 border-slate-300 rounded-lg text-slate-700 font-semibold hover:bg-slate-50 active:bg-slate-100 transition-colors duration-150"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting || Object.keys(formState.errors).length > 0}
-                    onClick={() => {
-                      console.log('Submit button clicked');
-                      console.log('Form values:', formValues);
-                      console.log('Form errors:', formState.errors);
-                    }}
-                    className={`px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
-                      submitting || Object.keys(formState.errors).length > 0
-                        ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:shadow-lg hover:from-green-700 hover:to-green-800 active:scale-95'
-                    }`}
-                    title={Object.keys(formState.errors).length > 0 ? 'Please fix validation errors' : ''}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    {submitting ? 'Creating...' : Object.keys(formState.errors).length > 0 ? '❌ Fix Errors' : 'Create Shipment'}
-                  </button>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <p className="text-sm text-slate-600">Packages</p>
+                  <p className="text-lg font-semibold text-blue-900 mt-1">{selectedPackages.size} selected</p>
                 </div>
-              </form>
+              </div>
+
+              {/* Estimated Delivery Date */}
+              <div className="mb-8">
+                <label className="block text-sm font-semibold text-slate-900 mb-3">📅 Estimated Delivery Date *</label>
+                <input
+                  type="datetime-local"
+                  {...register('estimatedDelivery')}
+                  className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-slate-900 bg-white transition-colors duration-150"
+                />
+                {formState.errors.estimatedDelivery && (
+                  <p className="text-sm text-red-600 mt-1">⚠️ {String(formState.errors.estimatedDelivery.message)}</p>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={submitting || Object.keys(formState.errors).length > 0}
+                className={`w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                  submitting || Object.keys(formState.errors).length > 0
+                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:shadow-lg active:scale-95'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                {submitting ? 'Creating...' : 'Create Shipment'}
+              </button>
             </div>
-          </div>
-        </div>
-      )}
+          </form>
+        )}
       </div>
     </div>
   );

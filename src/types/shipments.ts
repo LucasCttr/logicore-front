@@ -1,7 +1,14 @@
+export enum ShipmentType {
+  Pickup = 0,
+  Transfer = 1,
+  LastMile = 2,
+}
+
 export type Shipment = {
   id: string;
   routeCode?: string | null;
   status?: number | string | null;
+  type?: ShipmentType | null;
   driverId?: string | null;
   vehicleId?: string | null;
   destinationLocationId?: number | null;
@@ -23,7 +30,8 @@ export type CreateShipmentDto = {
   vehicleId: string;
   packageIds: string[];
   estimatedDelivery: string; // ISO date string
-  destinationLocationId?: number | null; // NULL = last-mile (door-to-door), number = depot-to-depot
+  destinationLocationId?: number | null; // NULL for Pickup/LastMile, number for Transfer (depot-to-depot)
+  type?: ShipmentType | null; // Explicit shipment type
 };
 
 export type AssignDriverDto = {

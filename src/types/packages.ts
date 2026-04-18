@@ -1,4 +1,5 @@
 export enum ShipmentType {
+  Pickup = 0,
   Transfer = 1,
   LastMile = 2
 }

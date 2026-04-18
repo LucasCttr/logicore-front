@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AuthGuard from '../../../components/AuthGuard';
+import ShipmentDetailView from '../../../components/ShipmentDetailView';
 import api from '../../../api/axiosClient';
 import { getDriverById } from '../../../api/drivers';
+import { getPackageById, markPackageAsDelivered } from '../../../api/packages';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 
@@ -77,6 +79,10 @@ export default function ShipmentDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [currentDriverId, setCurrentDriverId] = useState<string | null>(null);
+  const [packages, setPackages] = useState<any[]>([]);
+  const [loadingPackages, setLoadingPackages] = useState(false);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [markingDelivery, setMarkingDelivery] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchShipment = async () => {
@@ -368,28 +374,12 @@ export default function ShipmentDetailsPage() {
             </div>
 
             {/* Packages */}
-            {shipment.packageIds && shipment.packageIds.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Packages ({shipment.packageIds.length})</h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b bg-gray-50">
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Package ID</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Tracking Number</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {shipment.packageIds.map((pid, idx) => (
-                        <tr key={pid} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                          <td className="px-4 py-3 text-sm text-gray-600 font-mono">{pid.substring(0, 8)}...</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">-</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            {shipment && (
+              <ShipmentDetailView 
+                shipment={shipment}
+                driver={driver}
+                isDriver={currentUserRole === 'Driver'}
+              />
             )}
           </div>
         )}

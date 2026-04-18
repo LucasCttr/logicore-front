@@ -98,3 +98,29 @@ export async function getPackageHistory(id: string): Promise<PackageInternalHist
   }
   return res.data as PackageInternalHistoryDto[];
 }
+
+export async function markPackageAsDelivered(
+  id: string, 
+  data: { deliveryLatitude?: number; deliveryLongitude?: number; deliveryNotes?: string }
+): Promise<boolean> {
+  const res = await api.post(`/api/packages/${id}/mark-delivered`, data);
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as boolean;
+    throw new Error(res.data.error || 'Failed to mark package as delivered');
+  }
+  return res.data as boolean;
+}
+
+export async function markPackageAsCollected(
+  id: string, 
+  data: { collectionNotes?: string } = {}
+): Promise<boolean> {
+  const res = await api.post(`/api/packages/${id}/mark-collected`, data);
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as boolean;
+    throw new Error(res.data.error || 'Failed to mark package as collected');
+  }
+  return res.data as boolean;
+}
