@@ -54,6 +54,27 @@ export default function ShipmentForm() {
   const vehicles = vehiclesData?.items ?? [];
   const locations = Array.isArray(locationsData) ? locationsData : [];
 
+  // Helper: Get location index (1-based) from location GUID
+  // Builds a consistent mapping by sorting locations by createdAt
+  const buildLocationMap = (): Record<string, number> => {
+    const sorted = [...locations]
+      .filter(loc => loc.createdAt)
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+    
+    const map: Record<string, number> = {};
+    sorted.forEach((loc, idx) => {
+      map[loc.id] = idx + 1; // 1-based index
+    });
+    return map;
+  };
+
+  const locationMap = buildLocationMap();
+
+  // Helper: Get location index from GUID
+  const getLocationIndex = (locationId: string): number | null => {
+    return locationMap[locationId] || null;
+  };
+
   // Dynamic package filtering based on shipment type and location
   const getFilteredPackages = (): typeof allPackages => {
     if (shipmentType === null || shipmentType === undefined) return [];
@@ -66,12 +87,15 @@ export default function ShipmentForm() {
           return status === 0;
         case 1: // Transfer - only AtDepot packages FROM the selected origin location
           if (status !== 4) return false; // Must be AtDepot
+          
           // Filter by origin location if selected
           if (selectedOriginId) {
             const currentLocId = Number(p.currentLocationId ?? -1);
-            return currentLocId === Number(selectedOriginId);
+            const originLocIndex = getLocationIndex(selectedOriginId);
+            return currentLocId === originLocIndex;
           }
           return true; // Show all AtDepot if no origin selected yet
+          
         case 2: // LastMile - Pending or AtDepot
           return status === 0 || status === 4;
         default:
@@ -176,10 +200,10 @@ export default function ShipmentForm() {
         estimatedDelivery: deliveryDate.toISOString(),
         type: shipmentType!,
         originLocationId: shipmentType === 1 && data.originLocationId 
-          ? parseInt(data.originLocationId) 
+          ? getLocationIndex(data.originLocationId) 
           : null,
         destinationLocationId: (shipmentType === 0 || shipmentType === 1) && data.destinationLocationId 
-          ? parseInt(data.destinationLocationId) 
+          ? getLocationIndex(data.destinationLocationId) 
           : null,
       };
 

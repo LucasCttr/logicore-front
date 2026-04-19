@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { usePackage, useUpdatePackage, usePackageHistory } from '../hooks/usePackages';
 import { editPackageSchema, type EditPackageSchema } from '../schemas/editPackage';
 import { ShipmentType } from '../types/packages';
+import { getLocations } from '../api/locations';
+import type LocationDto from '../types/locations';
 
 type Props = { id: string };
 
@@ -74,8 +76,39 @@ export default function PackageDetail({ id }: Props) {
   const { data, isLoading, error } = usePackage(id);
   const { data: history } = usePackageHistory(id);
   const updatePackage = useUpdatePackage();
-
+  
   const [isEditing, setIsEditing] = useState(false);
+  const [locations, setLocations] = useState<LocationDto[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(true);
+
+  // Load locations to map destination names
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        setLoadingLocations(true);
+        const locs = await getLocations();
+        setLocations(locs);
+      } catch (err) {
+        console.error('Failed to load locations:', err);
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+    fetchLocations();
+  }, []);
+
+  // Helper to get location name by ID (order-based index)
+  const getLocationName = (locationId: number | null) => {
+    if (!locationId || !locations.length) return null;
+    // Locations are typically indexed starting from 1
+    const sorted = [...locations]
+      .filter(loc => loc.createdAt)
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+    if (locationId > 0 && locationId <= sorted.length) {
+      return sorted[locationId - 1]?.name;
+    }
+    return null;
+  };
 
   const { register, handleSubmit, formState, reset } = useForm<EditPackageSchema>({
     resolver: zodResolver(editPackageSchema) as any,
@@ -392,24 +425,70 @@ export default function PackageDetail({ id }: Props) {
 
             <div className="border-t pt-6">
               <h3 className="font-semibold mb-4 text-gray-900">Status</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-4">
+              <div className="grid grid-cols-2 gap-6 items-start">
+                <div>
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${statusBadgeClass}`}>
                     {statusLabel}
                   </span>
-                  {(pkg as any).currentLocationId && (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <span className="text-xs font-medium text-gray-500 uppercase">Depot:</span>
-                      <span className="font-semibold">ID: {(pkg as any).currentLocationId}</span>
-                    </div>
-                  )}
                 </div>
+                {(pkg as any).currentLocationId && (
+                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                    <p className="text-xs font-medium text-gray-500 uppercase mb-2">Current Location</p>
+                    {(() => {
+                      const sorted = [...locations]
+                        .filter(loc => loc.createdAt)
+                        .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+                      const location = (pkg as any).currentLocationId <= sorted.length 
+                        ? sorted[(pkg as any).currentLocationId - 1]
+                        : null;
+                      return location ? (
+                        <>
+                          <p className="font-semibold text-gray-900">{location.name}</p>
+                          <p className="text-sm text-gray-600">{location.addressLine1}{location.addressLine2 ? `, ${location.addressLine2}` : ''}</p>
+                          <p className="text-sm text-gray-600">{location.city}, {location.state || 'N/A'} {location.postalCode}</p>
+                        </>
+                      ) : (
+                        <p className="font-semibold text-gray-900">Depot #{(pkg as any).currentLocationId}</p>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
 
-          {/* Recipient Information */}
-          {(pkg as any).recipient && (
+              {/* Current Shipment Info */}
+              {(pkg as any).currentShipment && (
+                <div className="mt-6 pt-6 border-t">
+                  <h4 className="font-semibold text-gray-900 mb-3">Current Shipment</h4>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-gray-600 font-medium">Shipment ID</p>
+                      <p className="text-gray-900 font-mono text-sm">{(pkg as any).currentShipment.id}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 font-medium">Shipment Type</p>
+                      <p className="text-gray-900">
+                        {(pkg as any).currentShipment.type === 0 ? 'Pickup' :
+                         (pkg as any).currentShipment.type === 1 ? 'Transfer' :
+                         (pkg as any).currentShipment.type === 2 ? 'Last-Mile' : 'Unknown'}
+                      </p>
+                    </div>
+                    {(pkg as any).currentShipment.destinationLocationId && (
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Destination Depot</p>
+                        <p className="text-gray-900">
+                          {getLocationName((pkg as any).currentShipment.destinationLocationId) || 
+                           `Depot #${(pkg as any).currentShipment.destinationLocationId}`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            </div>
+
+            {/* Recipient Information */}
+            {(pkg as any).recipient && (
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="font-semibold mb-4 text-gray-900">Recipient Information</h3>
               <div className="grid grid-cols-2 gap-4">
