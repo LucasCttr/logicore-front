@@ -67,12 +67,13 @@ export default function ShipmentDetailView({ shipment, driver, isDriver }: Shipm
     const statusMap: Record<number, string> = {
       0: 'Pending',
       1: 'In Transit',
-      2: 'Dispatched',
-      3: 'Arrived',
+      2: 'Delivered',
+      3: 'Canceled',
       4: 'At Depot',
-      5: 'Delivered',
+      5: 'Delivered to Center',
       6: 'Returned',
       7: 'Collected',
+      8: 'Last-Mile',
     };
     return statusMap[status] || 'Unknown';
   };
@@ -81,12 +82,13 @@ export default function ShipmentDetailView({ shipment, driver, isDriver }: Shipm
     const colorMap: Record<number, string> = {
       0: 'bg-yellow-100 text-yellow-800',
       1: 'bg-orange-100 text-orange-800',
-      2: 'bg-blue-100 text-blue-800',
-      3: 'bg-green-100 text-green-800',
+      2: 'bg-green-100 text-green-800',
+      3: 'bg-red-100 text-red-800',
       4: 'bg-purple-100 text-purple-800',
-      5: 'bg-green-100 text-green-800',
+      5: 'bg-indigo-100 text-indigo-800',
       6: 'bg-red-100 text-red-800',
       7: 'bg-cyan-100 text-cyan-800',
+      8: 'bg-pink-100 text-pink-800',
     };
     return colorMap[status] || 'bg-gray-100 text-gray-800';
   };
@@ -186,17 +188,6 @@ export default function ShipmentDetailView({ shipment, driver, isDriver }: Shipm
 
   return (
     <div className="space-y-6">
-      {/* Shipment Type Badge */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
-        <div className="bg-blue-600 p-2 rounded-lg">
-          <Truck className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <p className="text-sm text-blue-600 font-medium">Shipment Type</p>
-          <p className="text-lg font-semibold text-blue-900">{shipmentType}</p>
-        </div>
-      </div>
-
       {/* Error Alert */}
       {deliveryError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
@@ -254,13 +245,20 @@ export default function ShipmentDetailView({ shipment, driver, isDriver }: Shipm
                   </div>
 
                   <div className="flex flex-col items-end gap-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${getPackageStatusColor(
-                        pkg.status
-                      )}`}
-                    >
-                      {getPackageStatusLabel(pkg.status)}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-semibold ${getPackageStatusColor(
+                          pkg.status
+                        )}`}
+                      >
+                        {getPackageStatusLabel(pkg.status)}
+                      </span>
+                      {(pkg as any).currentLocationId && (
+                        <span className="text-xs text-gray-600">
+                          📍 Depot ID: {(pkg as any).currentLocationId}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Show Mark Delivered button for Last-Mile (allow retries on Pending status) */}
                     {isDriver && shipment?.type === 2 && (pkg.status === 0 || pkg.status === 1 || pkg.status === 2) && (

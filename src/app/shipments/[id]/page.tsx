@@ -163,13 +163,17 @@ export default function ShipmentDetailsPage() {
   const getStatusLabel = (status: number): string => {
     switch (status) {
       case 0:
-        return 'Pending';
+        return 'Draft';
       case 1:
-        return 'In Transit';
+        return 'Loading';
       case 2:
-        return 'Delivered';
+        return 'Dispatched';
       case 3:
+        return 'Arrived';
+      case 4:
         return 'Canceled';
+      case 5:
+        return 'Delivered';
       default:
         return 'Unknown';
     }
@@ -178,13 +182,17 @@ export default function ShipmentDetailsPage() {
   const getStatusColor = (status: number): string => {
     switch (status) {
       case 0:
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-gray-100 text-gray-800';
       case 1:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-yellow-100 text-yellow-800';
       case 2:
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-100 text-blue-800';
       case 3:
+        return 'bg-purple-100 text-purple-800';
+      case 4:
         return 'bg-red-100 text-red-800';
+      case 5:
+        return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -212,10 +220,23 @@ export default function ShipmentDetailsPage() {
       
       const result = await finalizeShipment(shipmentId);
       if (result) {
-        // Refresh shipment
+        // Refresh shipment with all related data
         const response = await api.get(`/api/shipments/${shipmentId}`);
         const updated = response.data?.value ?? response.data;
         setShipment(updated);
+        
+        // Also refetch packages to ensure they're up to date
+        if (updated?.packageIds && updated.packageIds.length > 0) {
+          const updatedPackages = await Promise.all(
+            updated.packageIds.map((pkgId: string) => getPackageById(pkgId).catch(() => null))
+          );
+          // Update packages in the shipment object
+          setShipment(prev => prev ? {
+            ...prev,
+            packages: updatedPackages.filter(Boolean)
+          } : null);
+        }
+        
         setDeliveryError(null);
       } else {
         setDeliveryError('Failed to finalize shipment');
@@ -275,7 +296,7 @@ export default function ShipmentDetailsPage() {
                   </span>
                   
                   {/* Finalize Shipment Button - Driver only, when shipment is Dispatched or Arrived */}
-                  {currentUserRole === 'Driver' && (shipment.status === 1 || shipment.status === 3) && !shipment.deliveredAt && (
+                  {currentUserRole === 'Driver' && (shipment.status === 2 || shipment.status === 3) && !shipment.deliveredAt && (
                     <button
                       onClick={handleFinalizeShipment}
                       disabled={finalizingShipment}

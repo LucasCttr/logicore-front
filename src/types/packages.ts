@@ -26,6 +26,7 @@ export type Package = {
   originAddress?: string | null;
   destinationAddress?: string | null;
   currentShipment?: CurrentShipment | null;
+  currentLocationId?: number | null;
   [key: string]: any;
 };
 

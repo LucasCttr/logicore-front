@@ -26,7 +26,13 @@ const getStatusLabel = (status: any) => {
       case 4:
         return 'At Depot';
       case 5:
-        return 'Delivered (Center)';
+        return 'Delivered to Center';
+      case 6:
+        return 'Returned';
+      case 7:
+        return 'Collected';
+      case 8:
+        return 'Last-Mile';
       default:
         return String(status);
     }
@@ -42,15 +48,21 @@ const getStatusBadgeClass = (status: any) => {
       case 0:
         return 'bg-yellow-100 text-yellow-800';
       case 1:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-orange-100 text-orange-800';
       case 2:
         return 'bg-green-100 text-green-800';
       case 3:
         return 'bg-red-100 text-red-800';
       case 4:
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-purple-100 text-purple-800';
       case 5:
-        return 'bg-emerald-100 text-emerald-800';
+        return 'bg-indigo-100 text-indigo-800';
+      case 6:
+        return 'bg-red-100 text-red-800';
+      case 7:
+        return 'bg-cyan-100 text-cyan-800';
+      case 8:
+        return 'bg-pink-100 text-pink-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -381,36 +393,17 @@ export default function PackageDetail({ id }: Props) {
             <div className="border-t pt-6">
               <h3 className="font-semibold mb-4 text-gray-900">Status</h3>
               <div className="space-y-3">
-                <div>
+                <div className="flex items-center gap-4">
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${statusBadgeClass}`}>
                     {statusLabel}
                   </span>
-                </div>
-                
-                {/* Shipment Type Info */}
-                {(pkg as any).currentShipment && (
-                  <div className="pt-3 border-t">
-                    <p className="text-sm text-gray-700 font-medium mb-2">Shipment Type</p>
-                    <div className="flex items-center gap-2">
-                      {(pkg as any).currentShipment.type === ShipmentType.Transfer ? (
-                        <div className="flex items-center gap-2">
-                          <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
-                            🚚 Inter-Depot Transfer
-                          </span>
-                          {(pkg as any).currentShipment.destinationName && (
-                            <span className="text-sm text-gray-600">
-                              → {(pkg as any).currentShipment.destinationName}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
-                          🏠 Final Delivery (Last-Mile)
-                        </span>
-                      )}
+                  {(pkg as any).currentLocationId && (
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <span className="text-xs font-medium text-gray-500 uppercase">Depot:</span>
+                      <span className="font-semibold">ID: {(pkg as any).currentLocationId}</span>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -497,12 +490,12 @@ export default function PackageDetail({ id }: Props) {
               <div className="space-y-0">
                 {history.map((h: any, idx: number) => {
                   const statusColors: Record<string, { bg: string; border: string; icon: string; label: string }> = {
-                    'Pending': { bg: 'bg-yellow-50', border: 'border-yellow-400', icon: '⏳', label: 'Pendiente' },
-                    'InTransit': { bg: 'bg-orange-50', border: 'border-orange-400', icon: '🚚', label: 'En Tránsito' },
+                    'Pending': { bg: 'bg-yellow-50', border: 'border-yellow-400', icon: '', label: 'Pendiente' },
+                    'InTransit': { bg: 'bg-orange-50', border: 'border-orange-400', icon: '', label: 'En Tránsito' },
                     'Delivered': { bg: 'bg-green-50', border: 'border-green-400', icon: '✅', label: 'Entregado' },
-                    'AtDepot': { bg: 'bg-blue-50', border: 'border-blue-400', icon: '🏢', label: 'En Depósito' },
+                    'AtDepot': { bg: 'bg-blue-50', border: 'border-blue-400', icon: '', label: 'En Depósito' },
                     'Canceled': { bg: 'bg-red-50', border: 'border-red-400', icon: '❌', label: 'Cancelado' },
-                    'DeliveredToCenter': { bg: 'bg-indigo-50', border: 'border-indigo-400', icon: '📦', label: 'Centro' },
+                    'DeliveredToCenter': { bg: 'bg-indigo-50', border: 'border-indigo-400', icon: '', label: 'Centro' },
                     'Returned': { bg: 'bg-pink-50', border: 'border-pink-400', icon: '↩️', label: 'Devuelto' },
                     'Created': { bg: 'bg-slate-50', border: 'border-slate-400', icon: '💿', label: 'Creado' },
                   };
@@ -592,7 +585,6 @@ export default function PackageDetail({ id }: Props) {
                           )}
                           {h.notes && (
                             <div className="flex gap-2 text-gray-700 bg-white bg-opacity-70 p-2 rounded mt-2">
-                              <span className="flex-shrink-0">💬</span>
                               <span className="italic">{h.notes}</span>
                             </div>
                           )}

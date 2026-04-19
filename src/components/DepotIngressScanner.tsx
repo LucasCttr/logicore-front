@@ -383,30 +383,6 @@ export default function DepotIngressScanner() {
               <div className="text-lg font-semibold text-slate-900">{selectedPackage.recipientName || 'Unknown'}</div>
             </div>
 
-            {/* Shipment Type Info */}
-            {selectedPackage.currentShipment && (
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-8">
-                <div className="text-xs text-blue-600 font-semibold mb-2">Shipment Type</div>
-                <div className="flex items-center gap-2">
-                  {selectedPackage.currentShipment.type === ShipmentType.Transfer ? (
-                    <div>
-                      <div className="text-lg font-semibold text-purple-700">🚚 Inter-Depot Transfer</div>
-                      {selectedPackage.currentShipment.destinationName && (
-                        <div className="text-sm text-gray-600 mt-1">
-                          Destination: <span className="font-semibold">{selectedPackage.currentShipment.destinationName}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="text-lg font-semibold text-green-700">🏠 Final Delivery (Last-Mile)</div>
-                      <div className="text-sm text-gray-600 mt-1">Package to be delivered to customer door</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Available Actions */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Available Actions</h3>

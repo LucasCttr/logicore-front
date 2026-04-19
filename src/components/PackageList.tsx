@@ -75,7 +75,13 @@ const getStatusLabel = (status: any) => {
       case 4:
         return 'At Depot';
       case 5:
-        return 'Delivered (Center)';
+        return 'Delivered to Center';
+      case 6:
+        return 'Returned';
+      case 7:
+        return 'Collected';
+      case 8:
+        return 'Last-Mile';
       default:
         return String(status);
     }
@@ -91,15 +97,21 @@ const getStatusBadgeClass = (status: any) => {
       case 0:
         return 'bg-yellow-100 text-yellow-800';
       case 1:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-orange-100 text-orange-800';
       case 2:
         return 'bg-green-100 text-green-800';
       case 3:
         return 'bg-red-100 text-red-800';
       case 4:
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-purple-100 text-purple-800';
       case 5:
-        return 'bg-emerald-100 text-emerald-800';
+        return 'bg-indigo-100 text-indigo-800';
+      case 6:
+        return 'bg-red-100 text-red-800';
+      case 7:
+        return 'bg-cyan-100 text-cyan-800';
+      case 8:
+        return 'bg-pink-100 text-pink-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -203,9 +215,16 @@ export default function PackageList() {
                 <td className="px-8 py-4 font-medium text-gray-800">{title}</td>
                 <td className="px-8 py-4 text-gray-600">{recipientName}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded text-xs font-medium ${getStatusBadgeClass(p.status)}`}>
-                    {getStatusLabel(p.status)}
-                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span className={`px-3 py-1 rounded text-xs font-medium w-fit ${getStatusBadgeClass(p.status)}`}>
+                      {getStatusLabel(p.status)}
+                    </span>
+                    {(p as any)?.currentLocationId && (
+                      <span className="text-xs text-gray-600">
+                        📍 Depot ID: {(p as any).currentLocationId}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="pl-16 pr-8 py-4 text-gray-600">{destination}</td>
                 <td className="px-8 py-4 text-gray-600 text-sm">{formatDate(p.createdAt)}</td>

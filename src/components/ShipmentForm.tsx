@@ -216,12 +216,13 @@ export default function ShipmentForm() {
     const statusMap: Record<number, string> = {
       0: 'Pending',
       1: 'In Transit',
-      2: 'Dispatched',
-      3: 'Arrived',
+      2: 'Delivered',
+      3: 'Canceled',
       4: 'At Depot',
-      5: 'Delivered',
+      5: 'Delivered to Center',
       6: 'Returned',
       7: 'Collected',
+      8: 'Last-Mile',
     };
     return statusMap[Number(status)] || 'Unknown';
   };
@@ -230,12 +231,13 @@ export default function ShipmentForm() {
     const colorMap: Record<number, string> = {
       0: 'bg-yellow-100 text-yellow-800',
       1: 'bg-orange-100 text-orange-800',
-      2: 'bg-blue-100 text-blue-800',
-      3: 'bg-green-100 text-green-800',
+      2: 'bg-green-100 text-green-800',
+      3: 'bg-red-100 text-red-800',
       4: 'bg-purple-100 text-purple-800',
-      5: 'bg-green-100 text-green-800',
+      5: 'bg-indigo-100 text-indigo-800',
       6: 'bg-red-100 text-red-800',
       7: 'bg-cyan-100 text-cyan-800',
+      8: 'bg-pink-100 text-pink-800',
     };
     return colorMap[Number(status)] || 'bg-gray-100 text-gray-800';
   };
