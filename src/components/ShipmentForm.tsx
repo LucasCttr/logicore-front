@@ -32,7 +32,8 @@ export default function ShipmentForm() {
   // Step 1: Shipment Setup
   const [shipmentType, setShipmentType] = useState<ShipmentType | null>(null);
   const [selectedDriverId, setSelectedDriverId] = useState<string>('');
-  const [selectedDestinationId, setSelectedDestinationId] = useState<string>('');
+  const [selectedOriginId, setSelectedOriginId] = useState<string>('');      // For Transfer only
+  const [selectedDestinationId, setSelectedDestinationId] = useState<string>(''); // For Pickup/Transfer
 
   const resolver = zodResolver(createShipmentSchema) as Resolver<CreateShipmentSchema>;
   const { register, handleSubmit, formState, setValue } = useForm<CreateShipmentSchema>({
@@ -42,6 +43,7 @@ export default function ShipmentForm() {
       driverId: '',
       vehicleId: '',
       estimatedDelivery: '',
+      originLocationId: '',
       destinationLocationId: '',
     },
   });
@@ -52,7 +54,7 @@ export default function ShipmentForm() {
   const vehicles = vehiclesData?.items ?? [];
   const locations = Array.isArray(locationsData) ? locationsData : [];
 
-  // Dynamic package filtering based on shipment type
+  // Dynamic package filtering based on shipment type and location
   const getFilteredPackages = (): typeof allPackages => {
     if (shipmentType === null || shipmentType === undefined) return [];
 
@@ -62,8 +64,14 @@ export default function ShipmentForm() {
       switch (shipmentType) {
         case 0: // Pickup - only Pending packages
           return status === 0;
-        case 1: // Transfer (Depot-to-Depot) - only AtDepot packages
-          return status === 4;
+        case 1: // Transfer - only AtDepot packages FROM the selected origin location
+          if (status !== 4) return false; // Must be AtDepot
+          // Filter by origin location if selected
+          if (selectedOriginId) {
+            const currentLocId = Number(p.currentLocationId ?? -1);
+            return currentLocId === Number(selectedOriginId);
+          }
+          return true; // Show all AtDepot if no origin selected yet
         case 2: // LastMile - Pending or AtDepot
           return status === 0 || status === 4;
         default:
@@ -82,23 +90,30 @@ export default function ShipmentForm() {
     }
   }, [selectedDriverId, selectedDriver, setValue]);
 
-  // Validate step 1 (setup): type, driver, and optional destination
+  // Validate step 1 (setup): type, driver, and conditional location requirements
   const canProceedToStep2 = (): boolean => {
     if (shipmentType === null || shipmentType === undefined) return false;
     if (!selectedDriverId) return false;
-    if (shipmentType === 1 && !selectedDestinationId) return false; // Transfer requires destination
+    // Pickup (0) requires destination location
+    if (shipmentType === 0 && !selectedDestinationId) return false;
+    // Transfer (1) requires BOTH origin and destination
+    if (shipmentType === 1 && (!selectedOriginId || !selectedDestinationId)) return false;
+    // LastMile (2) doesn't require any location
     return true;
   };
 
   // Handle proceeding to package selection
   const handleProceedToPackages = async () => {
     if (!canProceedToStep2()) {
-      setSubmitError('Please select shipment type, driver, and destination (if required)');
+      const msg = shipmentType === 0 ? 'Please select shipment type, driver, and destination depot' 
+                : shipmentType === 1 ? 'Please select shipment type, driver, origin depot, and destination depot'
+                : 'Please select shipment type and driver';
+      setSubmitError(msg);
       return;
     }
     
     if (packages.length === 0) {
-      const packageType = shipmentType === 0 ? 'Pending' : shipmentType === 1 ? 'AtDepot' : 'available';
+      const packageType = shipmentType === 0 ? 'Pending' : shipmentType === 1 ? 'AtDepot in selected origin' : 'available';
       setSubmitError(`No ${packageType} packages found for this shipment type`);
       return;
     }
@@ -110,6 +125,12 @@ export default function ShipmentForm() {
     setValue('driverId', selectedDriverId);
     if (selectedDriver?.assignedVehicleId) {
       setValue('vehicleId', selectedDriver.assignedVehicleId);
+    }
+    if (shipmentType === 0 && selectedDestinationId) {
+      setValue('destinationLocationId', selectedDestinationId);
+    }
+    if (shipmentType === 1 && selectedOriginId) {
+      setValue('originLocationId', selectedOriginId);
     }
     if (shipmentType === 1 && selectedDestinationId) {
       setValue('destinationLocationId', selectedDestinationId);
@@ -154,7 +175,10 @@ export default function ShipmentForm() {
         packageIds: Array.from(selectedPackages),
         estimatedDelivery: deliveryDate.toISOString(),
         type: shipmentType!,
-        destinationLocationId: shipmentType === 1 && data.destinationLocationId 
+        originLocationId: shipmentType === 1 && data.originLocationId 
+          ? parseInt(data.originLocationId) 
+          : null,
+        destinationLocationId: (shipmentType === 0 || shipmentType === 1) && data.destinationLocationId 
           ? parseInt(data.destinationLocationId) 
           : null,
       };
@@ -303,22 +327,66 @@ export default function ShipmentForm() {
               )}
             </div>
 
-            {/* Destination (conditional for Transfer) */}
-            {shipmentType === 1 && (
+            {/* Location Selection for Pickup (destination only) */}
+            {shipmentType === 0 && (
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-slate-900 mb-3">📍 Destination Depot *</label>
+                <label className="block text-sm font-semibold text-slate-900 mb-3">📍 Destination Depot (where to bring collected items) *</label>
                 <select
                   value={selectedDestinationId}
                   onChange={(e) => setSelectedDestinationId(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-slate-900 bg-white transition-colors duration-150"
                 >
-                  <option value="">Select a destination depot...</option>
+                  <option value="">Select destination depot...</option>
                   {locations.map((location: LocationDto) => (
                     <option key={location.id} value={location.id}>
                       {location.name} - {location.city}
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {/* Location Selection for Transfer (origin AND destination) */}
+            {shipmentType === 1 && (
+              <div className="space-y-6 mb-8">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-3">📤 Origin Depot (collect from) *</label>
+                  <select
+                    value={selectedOriginId}
+                    onChange={(e) => setSelectedOriginId(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-slate-900 bg-white transition-colors duration-150"
+                  >
+                    <option value="">Select origin depot...</option>
+                    {locations.map((location: LocationDto) => (
+                      <option key={location.id} value={location.id}>
+                        {location.name} - {location.city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-3">📥 Destination Depot (deliver to) *</label>
+                  <select
+                    value={selectedDestinationId}
+                    onChange={(e) => setSelectedDestinationId(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-slate-900 bg-white transition-colors duration-150"
+                  >
+                    <option value="">Select destination depot...</option>
+                    {locations.map((location: LocationDto) => (
+                      <option key={location.id} value={location.id}>
+                        {location.name} - {location.city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+            
+            {/* LastMile Info */}
+            {shipmentType === 2 && (
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-6">
+                <p className="text-sm font-semibold text-blue-900">ℹ️ Last-Mile Delivery</p>
+                <p className="text-xs text-blue-700 mt-1">Each package will be delivered to its destination address. No depot selection needed.</p>
               </div>
             )}
 
@@ -372,6 +440,9 @@ export default function ShipmentForm() {
                   <div>
                     <h2 className="text-xl font-semibold text-slate-900">Select Packages</h2>
                     <p className="text-sm text-slate-600 mt-1">{selectedPackages.size} selected</p>
+                    {shipmentType === 2 && (
+                      <p className="text-xs text-blue-700 mt-2">ℹ️ Driver will visit each destination address and mark packages as delivered individually</p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-blue-700">{packages.length}</p>
@@ -488,19 +559,45 @@ export default function ShipmentForm() {
                 <div className="bg-slate-50 rounded-lg p-4">
                   <p className="text-sm text-slate-600">Type</p>
                   <p className="text-lg font-semibold text-slate-900 mt-1">
-                    {shipmentType === 0 ? '📦 Pickup' : shipmentType === 1 ? '🏢 Depot-to-Depot' : '🚪 Last-Mile'}
+                    {shipmentType === 0 ? '📦 Pickup' : shipmentType === 1 ? '🏢 Depot Transfer' : '🚪 Last-Mile'}
                   </p>
                 </div>
                 <div className="bg-slate-50 rounded-lg p-4">
                   <p className="text-sm text-slate-600">Driver</p>
                   <p className="text-lg font-semibold text-slate-900 mt-1">{selectedDriver?.name}</p>
                 </div>
-                {shipmentType === 1 && selectedDestinationId && (
+                {shipmentType === 0 && selectedDestinationId && (
                   <div className="bg-slate-50 rounded-lg p-4">
-                    <p className="text-sm text-slate-600">Destination</p>
+                    <p className="text-sm text-slate-600">Destination Depot</p>
                     <p className="text-lg font-semibold text-slate-900 mt-1">
                       {locations.find(l => String(l.id) === selectedDestinationId)?.name}
                     </p>
+                  </div>
+                )}
+                {shipmentType === 1 && (
+                  <>
+                    {selectedOriginId && (
+                      <div className="bg-slate-50 rounded-lg p-4">
+                        <p className="text-sm text-slate-600">Origin Depot</p>
+                        <p className="text-lg font-semibold text-slate-900 mt-1">
+                          {locations.find(l => String(l.id) === selectedOriginId)?.name}
+                        </p>
+                      </div>
+                    )}
+                    {selectedDestinationId && (
+                      <div className="bg-slate-50 rounded-lg p-4">
+                        <p className="text-sm text-slate-600">Destination Depot</p>
+                        <p className="text-lg font-semibold text-slate-900 mt-1">
+                          {locations.find(l => String(l.id) === selectedDestinationId)?.name}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+                {shipmentType === 2 && (
+                  <div className="bg-slate-50 rounded-lg p-4">
+                    <p className="text-sm text-slate-600">Destinations</p>
+                    <p className="text-lg font-semibold text-slate-900 mt-1">Multiple Addresses</p>
                   </div>
                 )}
                 <div className="bg-blue-50 rounded-lg p-4">

@@ -124,3 +124,16 @@ export async function markPackageAsCollected(
   }
   return res.data as boolean;
 }
+
+export async function markPackageAsAttemptFailed(
+  id: string, 
+  data: { reason?: string } = {}
+): Promise<boolean> {
+  const res = await api.post(`/api/packages/${id}/mark-attempt-failed`, data);
+  // Backend wraps responses in Result<T>
+  if (res.data && typeof res.data === 'object' && 'isSuccess' in res.data) {
+    if (res.data.isSuccess) return res.data.value as boolean;
+    throw new Error(res.data.error || 'Failed to mark attempt as failed');
+  }
+  return res.data as boolean;
+}

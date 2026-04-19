@@ -44,8 +44,8 @@ export function useShipments(page = 1, pageSize = 10, filters?: Record<string, a
         // getMyShipments already normalizes data, just wrap in PagedResultDto for consistency
         return {
           items: driverShipments,
-          totalCount: driverShipments.length,
-          pageNumber: 1,
+          total: driverShipments.length,
+          page: 1,
           pageSize: driverShipments.length,
         };
       },

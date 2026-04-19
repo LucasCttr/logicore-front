@@ -70,6 +70,12 @@ export async function completeShipment(id: string): Promise<boolean> {
   return res.data?.value ?? res.data;
 }
 
+export async function finalizeShipment(id: string): Promise<boolean> {
+  const res = await api.post(`/api/shipments/${id}/finalize`);
+  // Backend returns Result<bool>, extract the value
+  return res.data?.value ?? res.data;
+}
+
 export async function cancelShipment(id: string): Promise<boolean> {
   const res = await api.post(`/api/shipments/${id}/cancel`);
   // Backend returns Result<bool>, extract the value

@@ -30,7 +30,8 @@ export type CreateShipmentDto = {
   vehicleId: string;
   packageIds: string[];
   estimatedDelivery: string; // ISO date string
-  destinationLocationId?: number | null; // NULL for Pickup/LastMile, number for Transfer (depot-to-depot)
+  originLocationId?: number | null; // Pickup: origin location, Transfer/LastMile: null
+  destinationLocationId?: number | null; // Transfer: destination location, Pickup/LastMile: null
   type?: ShipmentType | null; // Explicit shipment type
 };
 

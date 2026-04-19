@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { getPackageById, markPackageAsDelivered, markPackageAsCollected } from '../api/packages';
+import { getPackageById, markPackageAsDelivered, markPackageAsCollected, markPackageAsAttemptFailed } from '../api/packages';
 import { ChevronLeft, Package, Truck, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
@@ -16,6 +16,7 @@ export default function ShipmentDetailView({ shipment, driver, isDriver }: Shipm
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [markingDelivery, setMarkingDelivery] = useState<Set<string>>(new Set());
   const [markingCollection, setMarkingCollection] = useState<Set<string>>(new Set());
+  const [markingAttemptFailed, setMarkingAttemptFailed] = useState<Set<string>>(new Set());
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
 
   // Get shipment type from the shipment object
@@ -126,9 +127,7 @@ export default function ShipmentDetailView({ shipment, driver, isDriver }: Shipm
       setMarkingCollection(prev => new Set([...prev, packageId]));
       setDeliveryError(null);
 
-      const result = await markPackageAsCollected(packageId, {
-        collectionNotes: 'Collected by driver',
-      });
+      const result = await markPackageAsCollected(packageId, {});
 
       if (result) {
         // Update package status in local state
@@ -145,6 +144,39 @@ export default function ShipmentDetailView({ shipment, driver, isDriver }: Shipm
       setDeliveryError(errorMsg);
     } finally {
       setMarkingCollection(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(packageId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleMarkAttemptFailed = async (packageId: string) => {
+    try {
+      setMarkingAttemptFailed(prev => new Set([...prev, packageId]));
+      setDeliveryError(null);
+
+      const result = await markPackageAsAttemptFailed(packageId, {
+        reason: 'No recipient available',
+      });
+
+      if (result) {
+        // Package stays in Pending status, just add history
+        // Refresh the package to see updated history
+        const updatedPackage = await getPackageById(packageId);
+        setPackages(prev =>
+          prev.map(p => p.id === packageId ? updatedPackage : p)
+        );
+      } else {
+        setDeliveryError('Failed to mark attempt as failed');
+      }
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.errors 
+        ? Object.values(err.response.data.errors).flat().join(', ')
+        : err.message || 'Error marking attempt as failed';
+      setDeliveryError(errorMsg);
+    } finally {
+      setMarkingAttemptFailed(prev => {
         const newSet = new Set(prev);
         newSet.delete(packageId);
         return newSet;
@@ -230,8 +262,8 @@ export default function ShipmentDetailView({ shipment, driver, isDriver }: Shipm
                       {getPackageStatusLabel(pkg.status)}
                     </span>
 
-                    {/* Show Mark Delivered button for Last-Mile and Depot-to-Depot */}
-                    {isDriver && shipment?.type !== 0 && (pkg.status === 1 || pkg.status === 2) && (
+                    {/* Show Mark Delivered button for Last-Mile (allow retries on Pending status) */}
+                    {isDriver && shipment?.type === 2 && (pkg.status === 0 || pkg.status === 1 || pkg.status === 2) && (
                       <button
                         onClick={() => handleMarkDelivered(pkg.id)}
                         disabled={markingDelivery.has(pkg.id)}
@@ -241,8 +273,30 @@ export default function ShipmentDetailView({ shipment, driver, isDriver }: Shipm
                       </button>
                     )}
 
-                    {/* Show Mark Collected button for Pickup shipments */}
-                    {isDriver && shipment?.type === 0 && pkg.status === 0 && (
+                    {/* Show Mark Delivered button for Depot-to-Depot Transfer (only InTransit/Dispatched) */}
+                    {isDriver && shipment?.type === 1 && (pkg.status === 1 || pkg.status === 2) && (
+                      <button
+                        onClick={() => handleMarkDelivered(pkg.id)}
+                        disabled={markingDelivery.has(pkg.id)}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 text-sm font-medium"
+                      >
+                        {markingDelivery.has(pkg.id) ? 'Marking...' : 'Mark Delivered'}
+                      </button>
+                    )}
+
+                    {/* Show Attempt Failed button for Last-Mile and Pickup (when not yet completed) */}
+                    {isDriver && (shipment?.type === 2 || shipment?.type === 0) && (pkg.status === 0 || pkg.status === 1 || pkg.status === 2) && (
+                      <button
+                        onClick={() => handleMarkAttemptFailed(pkg.id)}
+                        disabled={markingAttemptFailed.has(pkg.id)}
+                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition disabled:opacity-50 text-sm font-medium"
+                      >
+                        {markingAttemptFailed.has(pkg.id) ? 'Recording...' : 'No Recipient'}
+                      </button>
+                    )}
+
+                    {/* Show Mark Collected button for Pickup shipments (only if shipment is not Draft) */}
+                    {isDriver && shipment?.type === 0 && pkg.status === 0 && shipment?.status !== 0 && (
                       <button
                         onClick={() => handleMarkCollected(pkg.id)}
                         disabled={markingCollection.has(pkg.id)}

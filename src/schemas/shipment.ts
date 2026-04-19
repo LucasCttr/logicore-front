@@ -4,6 +4,7 @@ const createShipmentSchema = z.object({
   driverId: z.string().min(1, 'Driver is required'),
   vehicleId: z.string().min(1, 'Vehicle is required'),
   estimatedDelivery: z.string().min(1, 'Estimated delivery is required'),
+  originLocationId: z.string().optional().nullable(),
   destinationLocationId: z.string().optional().nullable(),
 });
 

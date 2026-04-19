@@ -7,6 +7,7 @@ import ShipmentDetailView from '../../../components/ShipmentDetailView';
 import api from '../../../api/axiosClient';
 import { getDriverById } from '../../../api/drivers';
 import { getPackageById, markPackageAsDelivered } from '../../../api/packages';
+import { finalizeShipment } from '../../../api/shipments';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 
@@ -83,6 +84,7 @@ export default function ShipmentDetailsPage() {
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
   const [markingDelivery, setMarkingDelivery] = useState<Set<string>>(new Set());
+  const [finalizingShipment, setFinalizingShipment] = useState(false);
 
   useEffect(() => {
     const fetchShipment = async () => {
@@ -203,6 +205,31 @@ export default function ShipmentDetailsPage() {
     }
   };
 
+  const handleFinalizeShipment = async () => {
+    try {
+      setFinalizingShipment(true);
+      setDeliveryError(null);
+      
+      const result = await finalizeShipment(shipmentId);
+      if (result) {
+        // Refresh shipment
+        const response = await api.get(`/api/shipments/${shipmentId}`);
+        const updated = response.data?.value ?? response.data;
+        setShipment(updated);
+        setDeliveryError(null);
+      } else {
+        setDeliveryError('Failed to finalize shipment');
+      }
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat().join(', ')
+        : err.message || 'Error finalizing shipment';
+      setDeliveryError(errorMsg);
+    } finally {
+      setFinalizingShipment(false);
+    }
+  };
+
   return (
     <AuthGuard requireRoles={["Admin", "Driver"]}>
       <div className="p-6 max-w-6xl mx-auto">
@@ -240,11 +267,24 @@ export default function ShipmentDetailsPage() {
                   </h1>
                   <p className="text-sm text-gray-500 mt-1 font-mono">{shipment.id}</p>
                 </div>
-                <span
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold ${getStatusColor(shipment.status)}`}
-                >
-                  {getStatusLabel(shipment.status)}
-                </span>
+                <div className="flex flex-col items-end gap-3">
+                  <span
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold ${getStatusColor(shipment.status)}`}
+                  >
+                    {getStatusLabel(shipment.status)}
+                  </span>
+                  
+                  {/* Finalize Shipment Button - Driver only, when shipment is Dispatched or Arrived */}
+                  {currentUserRole === 'Driver' && (shipment.status === 1 || shipment.status === 3) && !shipment.deliveredAt && (
+                    <button
+                      onClick={handleFinalizeShipment}
+                      disabled={finalizingShipment}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium text-sm"
+                    >
+                      {finalizingShipment ? 'Finalizing...' : 'Finalize Shipment'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
