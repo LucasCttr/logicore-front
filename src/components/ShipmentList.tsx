@@ -1,36 +1,48 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useShipments } from '../hooks/useShipments';
-import { getDrivers } from '../api/drivers';
+import { useQueryClient } from '@tanstack/react-query';
+import { useShipments, getUserRoleFromToken } from '../hooks/useShipments';
 import { getLocations } from '../api/locations';
 import type { LocationDto } from '../types/locations';
 import ListContainer from './ListContainer';
-import FilterShipments from './FilterShipments';
 import { startShipment } from '../api/shipmentActions';
-
-interface Driver {
-  id: string;
-  firstName?: string;
-  lastName?: string;
-  name?: string;
-}
+import { parseShipmentStatus } from '../api/shipmentMappers';
 
 export default function ShipmentList() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [itemsPerPage] = useState(12);
   const [activeTab, setActiveTab] = useState<'in-progress' | 'completed' | 'all'>('all');
-  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [locations, setLocations] = useState<LocationDto[]>([]);
   const router = useRouter();
-  
-  // Use single hook - it handles role-based endpoint logic internally
-  const { data, isLoading, error } = useShipments(currentPage, itemsPerPage);
-  
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateStart, setDateStart] = useState('');
-  const [dateEnd, setDateEnd] = useState('');
+
+  const userRole = getUserRoleFromToken();
+  const isDriver = userRole === 'Driver';
+  const isAdmin = userRole === 'Admin';
+
+  const adminListFilters = useMemo(
+    () => ({
+      q: searchQuery.trim() || undefined,
+      status:
+        activeTab === 'completed'
+          ? 'Completed'
+          : activeTab === 'in-progress'
+            ? 'InProgress'
+            : undefined,
+      sortBy: 'createdAt',
+      sortDir: 'desc',
+    }),
+    [searchQuery, activeTab]
+  );
+
+  const { data, isLoading, error } = useShipments(
+    currentPage,
+    itemsPerPage,
+    isDriver ? undefined : adminListFilters
+  );
 
   // Start shipment states
   const [startingShipmentId, setStartingShipmentId] = useState<string | null>(null);
@@ -40,62 +52,65 @@ export default function ShipmentList() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [driversData, locationsData] = await Promise.all([
-          getDrivers(),
-          getLocations()
-        ]);
-        setDrivers(driversData || []);
+        const locationsData = await getLocations();
         setLocations(locationsData || []);
       } catch (err) {
-        console.error('Error loading drivers/locations:', err);
+        console.error('Error loading locations:', err);
       }
     };
     loadData();
   }, []);
 
-  // Handle different data structures based on user role
-  let items: any[] = [];
-  let totalItems = 0;
-  
-  // useShipments now always returns PagedResultDto for both drivers and admins
-  items = (data as any)?.items ?? [];
-  totalItems = (data as any)?.totalCount ?? items.length;
-  
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const rawItems: any[] = (data as any)?.items ?? [];
+  const totalFromApi = (data as any)?.total ?? (data as any)?.totalCount ?? rawItems.length;
 
-  // Aplicar filtros
-  items = items.filter((item: any) => {
-    // Filtro de búsqueda
+  const matchesSearch = (item: any) => {
     const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = 
+    return (
       (item.routeCode?.toLowerCase() || '').includes(searchLower) ||
-      (item.destination?.toLowerCase() || '').includes(searchLower);
+      (item.destination?.toLowerCase() || '').includes(searchLower)
+    );
+  };
 
-    // Filtro de tab
-    // Backend statuses: 0=Draft, 1=Loading, 2=Dispatched, 3=Arrived, 4=Canceled
-    let matchesTab = true;
-    if (activeTab === 'in-progress') {
-      matchesTab = item.status === 1 || item.status === 2; // Loading or Dispatched
-    } else if (activeTab === 'completed') {
-      matchesTab = item.status === 3; // Arrived
-    }
-    // 'all' shows everything
+  const shipmentSt = (item: any) => parseShipmentStatus(item.status);
 
-    return matchesSearch && matchesTab;
-  });
+  const matchesTab = (item: any) => {
+    const st = shipmentSt(item);
+    if (activeTab === 'in-progress') return st === 1 || st === 2;
+    if (activeTab === 'completed') return st === 3 || st === 5;
+    return true;
+  };
 
-  // Reset a página 1 cuando cambian filtros o itemsPerPage
+  const searchOnlyItems = isDriver ? rawItems.filter((item: any) => matchesSearch(item)) : [];
+
+  let sortedItems: any[];
+  if (isDriver) {
+    sortedItems = rawItems
+      .filter((item: any) => matchesSearch(item) && matchesTab(item))
+      .sort((a: any, b: any) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+  } else {
+    sortedItems = [...rawItems].sort((a: any, b: any) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  }
+
+  const totalItems = isDriver ? sortedItems.length : totalFromApi;
+  const filteredTotalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage) || 1);
+
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const paginatedItems = isDriver
+    ? sortedItems.slice(startIdx, startIdx + itemsPerPage)
+    : sortedItems;
+
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, activeTab, itemsPerPage]);
-
-  // Helper function to get driver name by ID
-  const getDriverName = (driverId: string | null): string => {
-    if (!driverId) return '-';
-    const driver = drivers.find(d => d.id === driverId);
-    if (!driver) return driverId.substring(0, 8);
-    return `${driver.firstName || ''} ${driver.lastName || ''}`.trim() || driver.name || driverId.substring(0, 8);
-  };
 
   // Helper function to get destination label by location ID
   const getDestinationLabel = (locationId: number | string | null | undefined): string => {
@@ -104,55 +119,34 @@ export default function ShipmentList() {
     return location?.name || `Location #${locationId}`;
   };
 
-  // Helper function to get status label with driver-friendly terminology
-  const getUserRole = (): string | null => {
-    if (typeof window === 'undefined') return null;
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    try {
-      const parts = token.split('.');
-      if (parts.length < 2) return null;
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      const roles = payload.roles || payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-      if (!roles) return null;
-      if (Array.isArray(roles)) return roles[0];
-      return String(roles).split(',')[0].trim();
-    } catch (e) {
-      return null;
-    }
-  };
+  const getStatusLabel = (status: unknown): string => {
+    const isDriverRole = userRole === 'Driver';
+    const st = parseShipmentStatus(status);
 
-  const getStatusLabel = (status: number): string => {
-    const userRole = getUserRole();
-    const isDriver = userRole === 'Driver';
-
-    // Backend statuses: 0=Draft, 1=Loading, 2=Dispatched, 3=Arrived, 4=Canceled
-    switch (status) {
+    // Backend ShipmentStatus: Draft=0, Loading=1, Dispatched=2, Arrived=3, Canceled=4, Delivered=5
+    switch (st) {
       case 0: return 'Pending';
-      case 1: return isDriver ? 'Active' : 'Loading';
-      case 2: return isDriver ? 'Active' : 'Dispatched';
-      case 3: return isDriver ? 'Completed' : 'Arrived';
+      case 1: return isDriverRole ? 'Active' : 'Loading';
+      case 2: return isDriverRole ? 'Active' : 'Dispatched';
+      case 3: return isDriverRole ? 'Completed' : 'Arrived';
       case 4: return 'Canceled';
+      case 5: return isDriverRole ? 'Completed' : 'Delivered';
       default: return 'Unknown';
     }
   };
 
-  const getStatusColor = (status: number): string => {
-    // Backend statuses: 0=Draft, 1=Loading, 2=Dispatched, 3=Arrived, 4=Canceled
-    switch (status) {
+  const getStatusColor = (status: unknown): string => {
+    const st = parseShipmentStatus(status);
+    switch (st) {
       case 0: return 'bg-yellow-100 text-yellow-800';    // Draft
       case 1: return 'bg-orange-100 text-orange-800';    // Loading
       case 2: return 'bg-blue-100 text-blue-800';        // Dispatched
-      case 3: return 'bg-green-100 text-green-800';      // Arrived/Completed
+      case 3: return 'bg-green-100 text-green-800';      // Arrived
       case 4: return 'bg-red-100 text-red-800';          // Canceled
+      case 5: return 'bg-emerald-100 text-emerald-800'; // Delivered
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-
-  // Detect user role
-  const userRole = getUserRole();
-  const isDriver = userRole === 'Driver';
-  const isAdmin = userRole === 'Admin';
 
   const newButton = isAdmin ? (
     <button
@@ -172,8 +166,8 @@ export default function ShipmentList() {
       const result = await startShipment(shipmentId);
       
       if (result.isSuccess) {
-        // Refresh the shipments list - reload from server
         setCurrentPage(1);
+        await queryClient.invalidateQueries({ queryKey: ['shipments'] });
       } else {
         setStartError(result.error || 'Failed to start shipment');
         // Keep error visible for 5 seconds
@@ -188,8 +182,18 @@ export default function ShipmentList() {
     }
   };
 
-  const createdCount = items.filter((s: any) => s.status === 0 || s.status === 1 || s.status === 2).length;
-  const completedCount = items.filter((s: any) => s.status === 3).length;
+  const createdCount = isDriver
+    ? searchOnlyItems.filter((s: any) => {
+        const st = parseShipmentStatus(s.status);
+        return st === 0 || st === 1 || st === 2;
+      }).length
+    : 0;
+  const completedCount = isDriver
+    ? searchOnlyItems.filter((s: any) => {
+        const st = parseShipmentStatus(s.status);
+        return st === 3 || st === 5;
+      }).length
+    : 0;
 
   return (
     <>
@@ -219,7 +223,8 @@ export default function ShipmentList() {
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              Pending & Active ({createdCount})
+              Pending & Active
+              {isDriver ? ` (${createdCount})` : activeTab === 'in-progress' && isAdmin ? ` (${totalFromApi})` : ''}
             </button>
             <button
               onClick={() => { setActiveTab('completed'); setCurrentPage(1); }}
@@ -229,7 +234,8 @@ export default function ShipmentList() {
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              Completed ({completedCount})
+              Completed
+              {isDriver ? ` (${completedCount})` : activeTab === 'completed' && isAdmin ? ` (${totalFromApi})` : ''}
             </button>
             <button
               onClick={() => { setActiveTab('all'); setCurrentPage(1); }}
@@ -240,6 +246,7 @@ export default function ShipmentList() {
               }`}
             >
               All
+              {isDriver ? ` (${searchOnlyItems.length})` : activeTab === 'all' && isAdmin ? ` (${totalFromApi})` : ''}
             </button>
           </div>
           
@@ -264,18 +271,19 @@ export default function ShipmentList() {
       <ListContainer
         isLoading={isLoading}
         error={error?.message ?? null}
-        isEmpty={items.length === 0}
+        isEmpty={paginatedItems.length === 0}
         emptyMessage={`No ${activeTab === 'in-progress' ? 'in-progress' : activeTab === 'completed' ? 'completed' : ''} shipments.`}
         pagination={{
           currentPage,
-          totalPages,
-          totalItems: items.length,
-          itemsPerPage: itemsPerPage,
+          totalPages: filteredTotalPages,
+          totalItems,
+          itemsPerPage,
           onPageChange: setCurrentPage,
         }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-          {items.map((s: any) => {
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-2.5 p-3">
+          {paginatedItems.map((s: any) => {
+            const st = shipmentSt(s);
             const estDelivery = s.estimatedDelivery ? new Date(s.estimatedDelivery) : null;
             const estDeliveryDate = estDelivery?.toLocaleDateString() || '-';
             const estDeliveryTime = estDelivery?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '';
@@ -292,10 +300,18 @@ export default function ShipmentList() {
                 className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden"
               >
                 {/* Header with Status */}
-                <div className={`px-4 py-3 border-b border-gray-200 flex items-start justify-between ${
-                  s.status === 3 ? 'bg-red-50' : s.status === 2 ? 'bg-green-50' : s.status === 1 ? 'bg-blue-50' : 'bg-yellow-50'
+                <div className={`px-3.5 py-2.5 border-b border-gray-200 flex items-start justify-between ${
+                  st === 4
+                    ? 'bg-red-50'
+                    : st === 3 || st === 5
+                      ? 'bg-green-50'
+                      : st === 2
+                        ? 'bg-blue-50'
+                        : st === 1
+                          ? 'bg-orange-50'
+                          : 'bg-yellow-50'
                 }`}>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-gray-900 break-words">{s.routeCode}</h3>
                     <p className="text-xs text-gray-500 mt-1">Created: {created}</p>
                   </div>
@@ -305,9 +321,9 @@ export default function ShipmentList() {
                 </div>
 
                 {/* Main Content */}
-                <div className="px-4 py-4 space-y-3">
+                <div className="px-3.5 py-3 space-y-2.5">
                   {/* Destination */}
-                  <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="bg-gray-50 rounded-lg p-2.5">
                     <p className="text-xs text-gray-600 font-semibold uppercase">Destination</p>
                     <p className={`text-sm font-medium mt-1 flex items-center gap-2 ${
                       !s.destinationLocationId ? 'text-purple-700' : 'text-blue-700'
@@ -320,15 +336,15 @@ export default function ShipmentList() {
                   </div>
 
                   {/* Key Info Grid */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5">
                     {/* Packages */}
-                    <div className="bg-blue-50 rounded-lg p-3">
+                    <div className="bg-blue-50 rounded-lg p-2.5">
                       <p className="text-xs text-blue-600 font-semibold uppercase">Packages</p>
-                      <p className="text-2xl font-bold text-blue-900 mt-1">{s.packageIds?.length ?? 0}</p>
+                      <p className="text-xl font-bold text-blue-900 mt-1 leading-tight">{s.packageIds?.length ?? 0}</p>
                     </div>
 
                     {/* Estimated Delivery */}
-                    <div className={`rounded-lg p-3 ${
+                    <div className={`rounded-lg p-2.5 ${
                       isOverdue ? 'bg-red-50' : isToday ? 'bg-orange-50' : isSoon ? 'bg-yellow-50' : 'bg-green-50'
                     }`}>
                       <p className={`text-xs font-semibold uppercase ${
@@ -359,7 +375,7 @@ export default function ShipmentList() {
                   </div>
 
                   {/* Vehicle Capacity */}
-                  <div className="border-t pt-3">
+                  <div className="border-t border-gray-200 pt-2.5">
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <p className="text-gray-600 font-semibold">Weight Cap.</p>
@@ -374,23 +390,23 @@ export default function ShipmentList() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 flex gap-2">
+                <div className="px-3.5 py-2.5 border-t border-gray-200 bg-gray-50 flex gap-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       router.push(`/shipments/${s.id}`);
                     }}
-                    className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition"
+                    className="flex-1 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition"
                   >
                     View Details
                   </button>
-                  {s.status === 0 && isDriver && (
+                  {st === 0 && isDriver && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleStartShipment(s.id);
                       }}
-                      className="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition disabled:opacity-50"
+                      className="flex-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition disabled:opacity-50"
                       disabled={startingShipmentId === s.id}
                     >
                       {startingShipmentId === s.id ? 'Starting...' : 'Start'}

@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 const createVehicleSchema = z.object({
   plate: z.string().min(1, 'License plate is required').min(3, 'License plate must be at least 3 characters'),
+  make: z.string().max(120, 'Maximum 120 characters'),
+  model: z.string().max(120, 'Maximum 120 characters'),
   maxWeightCapacity: z.number().min(1, 'Maximum weight capacity is required').gt(0, 'Must be greater than 0'),
   maxVolumeCapacity: z.number().min(1, 'Maximum volume capacity is required').gt(0, 'Must be greater than 0'),
 });

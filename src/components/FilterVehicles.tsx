@@ -40,6 +40,7 @@ export default function FilterVehicles({ onSearch, onStatusFilter, onItemsPerPag
             <option value="100">100 items</option>
           </select>
         )}
+        {newButton}
       </div>
     </div>
   );

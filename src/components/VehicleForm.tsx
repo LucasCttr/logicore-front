@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import createVehicleSchema, { CreateVehicleSchema } from '../schemas/vehicle';
+import type { CreateVehicleRequest } from '../api/vehicles';
 import { useCreateVehicle } from '../hooks/useVehicles';
 import { useRouter } from 'next/navigation';
 
@@ -17,6 +18,8 @@ export default function VehicleForm() {
     resolver: zodResolver(createVehicleSchema),
     defaultValues: {
       plate: '',
+      make: '',
+      model: '',
       maxWeightCapacity: 5000,
       maxVolumeCapacity: 20,
     },
@@ -25,12 +28,19 @@ export default function VehicleForm() {
   const onSubmit = async (data: CreateVehicleSchema) => {
     setSubmitting(true);
     setSubmitError(null);
+    const payload: CreateVehicleRequest = {
+      plate: data.plate.trim(),
+      maxWeightCapacity: data.maxWeightCapacity,
+      maxVolumeCapacity: data.maxVolumeCapacity,
+      make: data.make.trim() || undefined,
+      model: data.model.trim() || undefined,
+    };
     try {
       if (mutation.mutateAsync) {
-        await mutation.mutateAsync(data);
+        await mutation.mutateAsync(payload);
       } else {
         await new Promise<void>((resolve, reject) => {
-          mutation.mutate(data, {
+          mutation.mutate(payload, {
             onSuccess() {
               resolve();
             },
@@ -60,6 +70,26 @@ export default function VehicleForm() {
           placeholder="e.g., ABC-1234"
         />
         {formState.errors.plate && <p className="text-sm text-red-600 mt-1">{String(formState.errors.plate.message)}</p>}
+      </label>
+
+      <label className="block mb-2">
+        <span className="text-sm text-gray-700 font-medium">Marca</span>
+        <input
+          {...register('make')}
+          className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900"
+          placeholder="e.g., Mercedes-Benz"
+        />
+        {formState.errors.make && <p className="text-sm text-red-600 mt-1">{String(formState.errors.make.message)}</p>}
+      </label>
+
+      <label className="block mb-2">
+        <span className="text-sm text-gray-700 font-medium">Modelo</span>
+        <input
+          {...register('model')}
+          className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900"
+          placeholder="e.g., Sprinter"
+        />
+        {formState.errors.model && <p className="text-sm text-red-600 mt-1">{String(formState.errors.model.message)}</p>}
       </label>
 
       <label className="block mb-2">

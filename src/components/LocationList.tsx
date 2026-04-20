@@ -63,29 +63,33 @@ export default function LocationList({ onAddClick, isFormOpen }: LocationListPro
           {items.length === 0 ? (
             <div className="p-6 text-gray-500">No locations available. Add one to get started.</div>
           ) : (
-            <div className="flex-1 p-6">
+            <div className="flex-1 px-6 py-2">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {paginatedItems.map((location) => (
-                  <div
-                    key={location.id}
-                    className="p-4 bg-white rounded border border-gray-200 shadow hover:shadow-md transition-shadow"
-                  >
-                    <h3 className="font-semibold text-gray-900 mb-2">{location.name}</h3>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      {location.addressLine1 && <p>{location.addressLine1}</p>}
-                      {location.addressLine2 && <p className="text-gray-500">{location.addressLine2}</p>}
-                      <p>
-                        {[location.city, location.state, location.postalCode].filter(Boolean).join(', ')}
-                      </p>
-                      {location.country && <p className="text-gray-500">{location.country}</p>}
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <span className="text-xs text-gray-500">
-                        {new Date(location.createdAt || '').toLocaleDateString()}
-                      </span>
-                    </div>
+                <div
+                  key={location.id}
+                  className="p-4 bg-white rounded border border-gray-200 shadow hover:shadow-md transition-shadow flex flex-col h-full"
+                >
+                  <h3 className="font-semibold text-gray-900 mb-2">{location.name}</h3>
+                  
+                  <div className="text-sm text-gray-600 space-y-1">
+                    {location.addressLine1 && <p>{location.addressLine1}</p>}
+                    {location.addressLine2 && <p className="text-gray-500">{location.addressLine2}</p>}
+                    <p>
+                      {[location.city, location.state, location.postalCode].filter(Boolean).join(', ')}
+                    </p>
+                    {location.country && <p className="text-gray-500">{location.country}</p>}
                   </div>
-                ))}
+
+                  {/* mt-auto empuja este div hacia el final del contenedor flex */}
+                  <div className="mt-auto pt-3 border-t border-gray-100">
+                    <span className="text-xs text-gray-500">
+                      {new Date(location.createdAt || '').toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              
+              ))}
               </div>
             </div>
           )}

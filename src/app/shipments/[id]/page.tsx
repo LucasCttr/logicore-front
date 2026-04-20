@@ -8,6 +8,7 @@ import api from '../../../api/axiosClient';
 import { getDriverById } from '../../../api/drivers';
 import { getPackageById, markPackageAsDelivered } from '../../../api/packages';
 import { finalizeShipment } from '../../../api/shipments';
+import { parseShipmentStatus } from '../../../api/shipmentMappers';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 
@@ -160,8 +161,9 @@ export default function ShipmentDetailsPage() {
     }
   }, [shipmentId, router, currentDriverId]);
 
-  const getStatusLabel = (status: number): string => {
-    switch (status) {
+  const getStatusLabel = (status: unknown): string => {
+    const st = parseShipmentStatus(status);
+    switch (st) {
       case 0:
         return 'Draft';
       case 1:
@@ -179,8 +181,9 @@ export default function ShipmentDetailsPage() {
     }
   };
 
-  const getStatusColor = (status: number): string => {
-    switch (status) {
+  const getStatusColor = (status: unknown): string => {
+    const st = parseShipmentStatus(status);
+    switch (st) {
       case 0:
         return 'bg-gray-100 text-gray-800';
       case 1:
@@ -296,7 +299,9 @@ export default function ShipmentDetailsPage() {
                   </span>
                   
                   {/* Finalize Shipment Button - Driver only, when shipment is Dispatched or Arrived */}
-                  {currentUserRole === 'Driver' && (shipment.status === 2 || shipment.status === 3) && !shipment.deliveredAt && (
+                  {currentUserRole === 'Driver' &&
+                    [2, 3].includes(parseShipmentStatus(shipment.status)) &&
+                    !shipment.deliveredAt && (
                     <button
                       onClick={handleFinalizeShipment}
                       disabled={finalizingShipment}

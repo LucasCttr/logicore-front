@@ -13,8 +13,8 @@ import {
   cancelShipment,
 } from '../api/shipments';
 
-// Helper to get user role from JWT token
-function getUserRoleFromToken(): string | null {
+/** Used by components that need role before calling role-aware hooks. */
+export function getUserRoleFromToken(): string | null {
   if (typeof window === 'undefined') return null;
   const token = localStorage.getItem('token');
   if (!token) return null;
@@ -31,17 +31,16 @@ function getUserRoleFromToken(): string | null {
   }
 }
 
-export function useShipments(page = 1, pageSize = 10, filters?: Record<string, any>) {
+export function useShipments(page = 1, pageSize = 12, filters?: Record<string, any>) {
   const { sortBy, sortDir, status, q } = filters ?? {};
   const userRole = getUserRoleFromToken();
-  
-  // Drivers use /api/shipments/me, admins use /api/shipments
+
+  // Drivers use /api/shipments/me (full list); paginate client-side in the list component.
   if (userRole === 'Driver') {
     return useQuery<PagedResultDto<Shipment>, Error>({
       queryKey: ['shipments', 'driver', 'me'],
       queryFn: async () => {
         const driverShipments = await getMyShipments();
-        // getMyShipments already normalizes data, just wrap in PagedResultDto for consistency
         return {
           items: driverShipments,
           total: driverShipments.length,
@@ -51,8 +50,8 @@ export function useShipments(page = 1, pageSize = 10, filters?: Record<string, a
       },
     });
   }
-  
-  // Admin endpoint
+
+  // Admin: server-side paging + filters
   return useQuery<PagedResultDto<Shipment>, Error>({
     queryKey: ['shipments', { page, pageSize, sortBy, sortDir, status, q }],
     queryFn: () => getShipments(page, pageSize, sortBy, sortDir, status, q),

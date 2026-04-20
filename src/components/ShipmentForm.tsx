@@ -308,7 +308,7 @@ export default function ShipmentForm() {
             
             {/* Type Selection */}
             <div className="mb-8">
-              <label className="block text-sm font-semibold text-slate-900 mb-4">📦 Shipment Type *</label>
+              <label className="block text-sm font-semibold text-slate-900 mb-4">Shipment Type *</label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
                   { type: 0, label: 'Pickup', desc: 'Collect packages from locations' },
@@ -333,7 +333,7 @@ export default function ShipmentForm() {
 
             {/* Driver Selection */}
             <div className="mb-8">
-              <label className="block text-sm font-semibold text-slate-900 mb-3">👨‍✈️ Driver *</label>
+              <label className="block text-sm font-semibold text-slate-900 mb-3">Driver *</label>
               <select
                 value={selectedDriverId}
                 onChange={(e) => setSelectedDriverId(e.target.value)}
@@ -342,13 +342,13 @@ export default function ShipmentForm() {
                 <option value="">Select a driver...</option>
                 {drivers.map((driver) => (
                   <option key={driver.id} value={driver.id}>
-                    {driver.name} {driver.assignedVehicleId ? '🚗' : ''}
+                    {driver.name} {driver.assignedVehicleId ? '' : ''}
                   </option>
                 ))}
               </select>
               {selectedDriver && (
                 <p className="text-sm text-slate-600 mt-2">
-                  🚙 Vehicle: {selectedDriver.assignedVehicleId ? vehicles.find(v => v.id === selectedDriver.assignedVehicleId)?.licensePlate || 'No plate' : 'No vehicle assigned'}
+                  Vehicle: {selectedDriver.assignedVehicleId ? vehicles.find(v => v.id === selectedDriver.assignedVehicleId)?.licensePlate || 'No plate' : 'No vehicle assigned'}
                 </p>
               )}
             </div>
@@ -356,7 +356,7 @@ export default function ShipmentForm() {
             {/* Location Selection for Pickup (destination only) */}
             {shipmentType === 0 && (
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-slate-900 mb-3">📍 Destination Depot (where to bring collected items) *</label>
+                <label className="block text-sm font-semibold text-slate-900 mb-3">Destination Depot (where to bring collected items) *</label>
                 <select
                   value={selectedDestinationId}
                   onChange={(e) => setSelectedDestinationId(e.target.value)}
@@ -419,7 +419,7 @@ export default function ShipmentForm() {
             {/* Available Packages Info */}
             {shipmentType !== null && shipmentType !== undefined && (
               <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-6">
-                <p className="text-sm text-slate-600">📊 Available packages:</p>
+                <p className="text-sm text-slate-600">Available packages:</p>
                 <p className="text-2xl font-bold text-blue-600 mt-1">{packages.length}</p>
                 <p className="text-xs text-slate-500 mt-1">
                   {shipmentType === 0 ? 'Pending packages' : shipmentType === 1 ? 'At Depot packages' : 'Pending or At Depot packages'}
@@ -585,7 +585,7 @@ export default function ShipmentForm() {
                 <div className="bg-slate-50 rounded-lg p-4">
                   <p className="text-sm text-slate-600">Type</p>
                   <p className="text-lg font-semibold text-slate-900 mt-1">
-                    {shipmentType === 0 ? '📦 Pickup' : shipmentType === 1 ? '🏢 Depot Transfer' : '🚪 Last-Mile'}
+                    {shipmentType === 0 ? 'Pickup' : shipmentType === 1 ? 'Depot Transfer' : 'Last-Mile'}
                   </p>
                 </div>
                 <div className="bg-slate-50 rounded-lg p-4">
@@ -634,7 +634,7 @@ export default function ShipmentForm() {
 
               {/* Estimated Delivery Date */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-slate-900 mb-3">📅 Estimated Delivery Date *</label>
+                <label className="block text-sm font-semibold text-slate-900 mb-3">Estimated Delivery Date *</label>
                 <input
                   type="datetime-local"
                   {...register('estimatedDelivery')}
