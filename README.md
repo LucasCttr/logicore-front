@@ -90,6 +90,7 @@ Vista principal para administradores con resumen operativo, accesos directos de 
 
 ### Dashboard de Driver
 ![Dashboard de Driver](./assets/DriverDashboard.psd.png)
+
 Vista inicial para el conductor con accesos rapidos a sus tareas del dia, metricas basicas y navegacion operativa.
 
 ### Mis Envios (Driver)
@@ -103,18 +104,6 @@ Flujo de escaneo de codigos para registrar recoleccion, ingreso a deposito y ent
 ### Vista Mobile
 ![Vista Mobile](./assets/PhoneView.psd.png)
 Diseño adaptado a celular para operacion en campo, priorizando acciones grandes y navegacion rapida.
-
-### Gestion de Conductores
-![Drivers](./assets/Drivers.psd.png)
-Listado y administracion de conductores: consulta, filtros, alta, edicion y control de disponibilidad.
-
-### Gestion de Vehiculos
-![Vehicles](./assets/Vehicles.psd.png)
-Pantalla para administrar la flota, asignaciones y estado operativo de los vehiculos.
-
-### Gestion de Ubicaciones
-![Locations](./assets/Locations.psd.png)
-Permite crear y administrar sucursales/depositos con su informacion operativa.
 
 ### Gestion de Paquetes
 ![Packages](./assets/Packages.psd.png)
@@ -139,6 +128,18 @@ Segundo paso para asociar paquetes, validar informacion y definir detalles opera
 ### Crear Envio - Paso 3
 ![Create Shipment 3](./assets/CreateShipment3.psd.png)
 Paso final de confirmacion y revision antes de crear el envio.
+
+### Gestion de Conductores
+![Drivers](./assets/Drivers.psd.png)
+Listado y administracion de conductores: consulta, filtros, alta, edicion y control de disponibilidad.
+
+### Gestion de Vehiculos
+![Vehicles](./assets/Vehicles.psd.png)
+Pantalla para administrar la flota, asignaciones y estado operativo de los vehiculos.
+
+### Gestion de Ubicaciones
+![Locations](./assets/Locations.psd.png)
+Permite crear y administrar sucursales/depositos con su informacion operativa.
 
 ### Gestion de Usuarios
 ![Users](./assets/Users.psd.png)
