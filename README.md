@@ -161,64 +161,9 @@ Permite crear y administrar sucursales/depositos con su informacion operativa.
 ![Users](./assets/Users.psd.png)
 Administracion de usuarios del sistema: roles, activacion y permisos de acceso.
 
-## Como Ejecutarlo en Local
-1. Asegurate de tener instalado `Node.js 18+` y `npm` o `pnpm`.
-2. Clona el repositorio y entra en la carpeta:
-
-```bash
-cd logicore-front
-```
-
-3. Instala dependencias:
-
-```bash
-npm install
-# o
-pnpm install
-```
-
-4. Ajusta la URL base del backend en `src/api/axiosClient.ts` (normalmente `http://localhost:5000` en desarrollo).
-
-5. Levanta el servidor de desarrollo:
-
-```bash
-npm run dev
-# o
-pnpm dev
-```
-
-6. Abre en el navegador:
-
-```text
-http://localhost:3000
-```
-
-## Variables de Entorno
-Crea un archivo `.env.local` en la raiz del proyecto si lo necesitas:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000
-```
-
-Asegurate de tener el backend corriendo en esa URL.
-
-## Build de Produccion
-```bash
-npm run build
-npm run start
-```
-
-## Linting
-```bash
-npm run lint
-```
-
-## Deployment
-- Compatible con plataformas que soportan Next.js: Vercel, Netlify, Railway, AWS Amplify, etc.
-- Puedes conectar el repositorio a Vercel para deploy automatico en cada push a main.
 
 ## Proximos Pasos
+- Implementar/Terminar funcionalidades.
 - Agregar tests unitarios (Jest + React Testing Library).
-- Integrar WebSocket para actualizaciones en tiempo real de envios.
-- Optimizar rendimiento del scanner para operacion en campo (modo offline, updates por lote).
-- Agregar tracking de ubicacion del conductor para mayor visibilidad de flota.
+- Arreglar bugs.
+
