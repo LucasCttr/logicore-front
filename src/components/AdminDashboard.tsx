@@ -38,10 +38,10 @@ export default function AdminDashboard() {
     const loadDashboardData = async () => {
       try {
         const [shipmentsRes, driversRes, vehiclesRes, packagesRes] = await Promise.all([
-          getShipments(1, 1000),
+          getShipments(1, 100),
           getDrivers(),
           getVehicles(),
-          getPackages(1, 1000),
+          getPackages(1, 100),
         ]);
 
         const shipmentItems = shipmentsRes?.items ?? [];
@@ -62,6 +62,7 @@ export default function AdminDashboard() {
           error: null,
         });
       } catch (err) {
+        console.error('Dashboard data loading error:', err);
         setData((prev) => ({
           ...prev,
           isLoading: false,
@@ -84,7 +85,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-8 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-8 mb-8 py-8">
         {/* Total Shipments */}
         <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 flex items-center justify-between">

@@ -16,7 +16,8 @@ export async function getPackages(page = 1, pageSize = 20): Promise<PagedRespons
     if (payload.isSuccess) return payload.value as PagedResponse<Package>;
     throw new Error(payload.error || 'Failed to fetch packages');
   }
-  return payload as PagedResponse<Package>;
+  // Ensure we always return a valid PagedResponse structure
+  return (payload?.items || payload) ? { items: Array.isArray(payload) ? payload : (payload?.items ?? []), pageNumber: 1, pageSize, totalCount: payload?.totalCount ?? 0 } : { items: [], pageNumber: 1, pageSize, totalCount: 0 };
 }
 
 export async function getPackageById(id: string): Promise<Package> {

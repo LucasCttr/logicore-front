@@ -31,7 +31,9 @@ export type UpdateVehicleRequest = {
 export async function getVehicles(): Promise<{ items: Vehicle[] }> {
   const res = await api.get('/api/vehicles');
   const payload: any = res.data;
-  return { items: payload?.value ?? payload?.Value ?? payload ?? [] };
+  const data = payload?.value ?? payload?.Value ?? payload;
+  const items = Array.isArray(data) ? data : (data?.items ?? []);
+  return { items };
 }
 
 export async function getVehicleById(id: string): Promise<Vehicle> {

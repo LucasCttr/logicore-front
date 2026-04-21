@@ -63,7 +63,7 @@ export default function Sidebar() {
     if (isDriver) {
       // Driver-only view: shipments, scanner, profile
       links = [
-        { href: '/', label: 'Home', icon: Home },
+        { href: '/', label: 'Dashboard', icon: Home },
         { href: '/driver/shipments', label: 'My Shipments', icon: Truck },
         { href: '/driver/scanner', label: 'Scanner', icon: Scan },
         { href: '/driver/profile', label: 'My Profile', icon: User }
@@ -71,7 +71,7 @@ export default function Sidebar() {
     } else if (isAdmin) {
       // Admin-only full management
       links = [
-        { href: '/', label: 'Home', icon: Home },
+        { href: '/', label: 'Dashboard', icon: Home },
         { href: '/drivers', label: 'Drivers', icon: Users },
         { href: '/packages', label: 'Packages', icon: Package },
         { href: '/scanner', label: 'Scanner', icon: Scan },
@@ -83,7 +83,7 @@ export default function Sidebar() {
     } else {
       // Default authenticated user (no specific role)
       links = [
-        { href: '/', label: 'Home', icon: Home },
+        { href: '/', label: 'Dashboard', icon: Home },
       ];
     }
   }

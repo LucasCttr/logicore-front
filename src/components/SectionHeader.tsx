@@ -13,7 +13,7 @@ export default function SectionHeader({ title: customTitle, backHref }: SectionH
   const pathname = usePathname() || '/';
 
   const getTitleFromPath = (path: string): string => {
-    if (path === '/') return 'Home';
+    if (path === '/') return 'Dashboard';
     if (path === '/drivers') return 'Drivers';
     if (path === '/packages') return 'Packages';
     if (path === '/scanner') return 'Scanner';

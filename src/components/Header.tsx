@@ -34,7 +34,7 @@ export default function Header() {
     return () => window.removeEventListener('storage', onStorage);
   }, [pathname]);
   const links = [
-    { href: '/', label: 'Home' },
+    { href: '/', label: 'Dashboard' },
     { href: '/drivers', label: 'Drivers' },
     { href: '/packages', label: 'Packages' },
     { href: '/scanner', label: 'Scanner' },

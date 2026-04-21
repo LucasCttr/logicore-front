@@ -31,7 +31,7 @@ function getUserIdFromToken(token: string): string | null {
   }
 }
 
-export default function Home() {
+export default function Dashboard() {
   const [roles, setRoles] = useState<string[]>([]);
   const [assignedVehicle, setAssignedVehicle] = useState<AssignedVehicleInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -4,7 +4,8 @@ import { Driver, RegisterDriverDto, UpdateDriverStatusDto } from '../types/drive
 export async function getDrivers(): Promise<Driver[]> {
   const res = await api.get('/api/drivers');
   const payload: any = res.data;
-  return payload?.value ?? payload?.Value ?? payload;
+  const data = payload?.value ?? payload?.Value ?? payload;
+  return Array.isArray(data) ? data : [];
 }
 
 export async function getDriverById(id: string): Promise<Driver> {
