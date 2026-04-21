@@ -172,6 +172,16 @@ export default function PackageList() {
     return null;
   };
 
+  const isDeliveredStatus = (status: unknown) => {
+    const asNumber = typeof status === "number" ? status : Number(status as any);
+    return asNumber === 2 || asNumber === 5;
+  };
+
+  const isInTransitStatus = (status: unknown) => {
+    const asNumber = typeof status === "number" ? status : Number(status as any);
+    return asNumber === 1;
+  };
+
   let items = data?.items ?? [];
   const totalItems = (data as any)?.totalCount ?? items.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -289,7 +299,7 @@ export default function PackageList() {
                     >
                       {getStatusLabel(p.status)}
                     </span>
-                    {(p as any)?.currentLocationId && (
+                    {(p as any)?.currentLocationId && !isDeliveredStatus(p.status) && !isInTransitStatus(p.status) && (
                       <span className="text-xs text-gray-600">
                         {getLocationName((p as any).currentLocationId) ||
                           `Depot #${(p as any).currentLocationId}`}

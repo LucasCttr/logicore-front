@@ -155,6 +155,7 @@ export default function PackageDetail({ id }: Props) {
 
   const statusLabel = getStatusLabel(pkg.status);
   const statusBadgeClass = getStatusBadgeClass(pkg.status);
+  const isDelivered = statusLabel === 'Delivered' || statusLabel === 'Delivered to Center';
 
   return (
     <div className="mx-auto p-6 pt-4">
@@ -430,10 +431,37 @@ export default function PackageDetail({ id }: Props) {
                   {statusLabel}
                 </span>
               </div>
-              {(pkg as any).currentLocationId && (
-                <div className="">
-                  <p className="font-semibold mb-2 text-gray-900">Current Location</p>
-                  {(() => {
+              {!isDelivered && (
+              <div className="mt-6 pt-6 border-t">
+                <p className="font-semibold mb-3 text-gray-900">Current Location</p>
+                {(pkg as any).currentShipment ? (
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm text-gray-600 font-medium">Location Type</p>
+                      <p className="text-gray-900">
+                        Shipment
+                        {' '}
+                        {(pkg as any).currentShipment.type === 0 ? '(Pickup)' :
+                         (pkg as any).currentShipment.type === 1 ? '(Transfer)' :
+                         (pkg as any).currentShipment.type === 2 ? '(Last-Mile)' : ''}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 font-medium">Shipment ID</p>
+                      <p className="text-gray-900 font-mono text-sm">{(pkg as any).currentShipment.id}</p>
+                    </div>
+                    {(pkg as any).currentShipment.destinationLocationId && (
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Destination Depot</p>
+                        <p className="text-gray-900">
+                          {getLocationName((pkg as any).currentShipment.destinationLocationId) || 
+                           `Depot #${(pkg as any).currentShipment.destinationLocationId}`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (pkg as any).currentLocationId ? (
+                  (() => {
                     const sorted = [...locations]
                       .filter(loc => loc.createdAt)
                       .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
@@ -449,38 +477,11 @@ export default function PackageDetail({ id }: Props) {
                     ) : (
                       <p className="font-bold text-gray-900 text-lg">Depot #{(pkg as any).currentLocationId}</p>
                     );
-                  })()}
-                </div>
-              )}
-
-              {/* Current Shipment Info */}
-              {(pkg as any).currentShipment && (
-                <div className="mt-6 pt-6 border-t">
-                  <h4 className="font-semibold text-gray-900 mb-3">Current Shipment</h4>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Shipment ID</p>
-                      <p className="text-gray-900 font-mono text-sm">{(pkg as any).currentShipment.id}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Shipment Type</p>
-                      <p className="text-gray-900">
-                        {(pkg as any).currentShipment.type === 0 ? 'Pickup' :
-                         (pkg as any).currentShipment.type === 1 ? 'Transfer' :
-                         (pkg as any).currentShipment.type === 2 ? 'Last-Mile' : 'Unknown'}
-                      </p>
-                    </div>
-                    {(pkg as any).currentShipment.destinationLocationId && (
-                      <div>
-                        <p className="text-sm text-gray-600 font-medium">Destination Depot</p>
-                        <p className="text-gray-900">
-                          {getLocationName((pkg as any).currentShipment.destinationLocationId) || 
-                           `Depot #${(pkg as any).currentShipment.destinationLocationId}`}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  })()
+                ) : (
+                  <p className="text-sm text-gray-500">No current location available.</p>
+                )}
+              </div>
               )}
             </div>
             </div>

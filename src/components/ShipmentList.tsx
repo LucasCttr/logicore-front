@@ -112,11 +112,31 @@ export default function ShipmentList() {
     setCurrentPage(1);
   }, [searchQuery, activeTab, itemsPerPage]);
 
+  const locationNameMap = useMemo(() => {
+    const sortedLocations = [...locations]
+      .filter(location => location.createdAt)
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+
+    const map: Record<number, string> = {};
+    sortedLocations.forEach((location, index) => {
+      map[index + 1] = location.name;
+    });
+
+    return map;
+  }, [locations]);
+
   // Helper function to get destination label by location ID
   const getDestinationLabel = (locationId: number | string | null | undefined): string => {
-    if (!locationId) return 'Last Mile';
-    const location = locations.find(l => String(l.id) === String(locationId));
-    return location?.name || `Location #${locationId}`;
+    if (locationId === null || locationId === undefined || locationId === '') {
+      return 'Last Mile';
+    }
+
+    const numericLocationId = Number(locationId);
+    if (Number.isNaN(numericLocationId)) {
+      return `Location #${locationId}`;
+    }
+
+    return locationNameMap[numericLocationId] || `Location #${numericLocationId}`;
   };
 
   const getStatusLabel = (status: unknown): string => {
