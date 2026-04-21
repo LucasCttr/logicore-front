@@ -1,164 +1,203 @@
-# LogiCore Front — Logistics Management Interface
+# LogiCore Front - Interfaz de Gestion Logistica
 
-## Description
-- **Purpose**: Modern web interface for the LogiCore platform, visual complement to the backend. Learning project in Next.js with frontend best practices.
-- **What it does**: Provides a dual-role UI for managing drivers, vehicles, locations, packages and shipments, with reactive forms, input validation and consumption of the [LogiCore API](https://github.com/LucasCttr/LogiCoreBack).
-  - **Admin Interface**: Full CRUD for drivers, vehicles, locations, packages, shipments, users
-  - **Driver Interface**: Mobile-optimized scanner for package collection, my shipments view, profile & license management
-  - **Package Scanner**: Barcode-based workflow with state-aware actions (collect, drop at depot, deliver)
+## Descripcion
+- **Proposito**: Interfaz web moderna para la plataforma LogiCore, como complemento visual del backend. Proyecto de aprendizaje en Next.js con buenas practicas de frontend.
+- **Que hace**: Provee una UI por roles para gestionar conductores, vehiculos, ubicaciones, paquetes y envios, con formularios reactivos, validacion de entradas y consumo de la [LogiCore API](https://github.com/LucasCttr/LogiCoreBack).
+  - **Interfaz Admin**: CRUD completo para conductores, vehiculos, ubicaciones, paquetes, envios y usuarios.
+  - **Interfaz Driver**: Scanner optimizado para celular, vista de mis envios y gestion de perfil/licencia.
+  - **Scanner de Paquetes**: Flujo basado en codigo de barras con acciones segun estado (recolectar, dejar en deposito, entregar).
 - **Backend**: [.NET API: https://github.com/LucasCttr/LogiCoreBack]
 
-## Architecture
-- **Pattern**: Modular component-based — separates responsibilities across `components`, `hooks`, `api`, `pages` and `types`.
-- **Organization**: 
-  - `app/`: Next.js routes (App Router) and layouts
-  - `components/`: reusable components (forms, lists, filters, modals)
-  - `hooks/`: custom hooks for data logic and state
-  - `api/`: HTTP client and services to consume backend API
-  - `schemas/`: validation with Zod
-  - `types/`: shared TypeScript types
+## Arquitectura
+- **Patron**: Modular basado en componentes, separando responsabilidades en `components`, `hooks`, `api`, `app` y `types`.
+- **Organizacion**:
+  - `app/`: Rutas de Next.js (App Router) y layouts.
+  - `components/`: Componentes reutilizables (formularios, listas, filtros, modales).
+  - `hooks/`: Hooks custom para logica de datos y estado.
+  - `api/`: Cliente HTTP y servicios para consumir el backend.
+  - `schemas/`: Validaciones con Zod.
+  - `types/`: Tipos compartidos de TypeScript.
 
-## Tech Stack
-- **Language**: `TypeScript`
+## Stack Tecnologico
+- **Lenguaje**: `TypeScript`
 - **Framework**: `Next.js 15+` (App Router)
-- **Styling**: `Tailwind CSS`
-- **Validation**: `Zod` + `React Hook Form`
-- **HTTP Client**: `Axios`
-- **State**: `React Hooks` (useState, useContext)
-- **Linters**: `ESLint`
+- **Estilos**: `Tailwind CSS`
+- **Validacion**: `Zod` + `React Hook Form`
+- **Cliente HTTP**: `Axios`
+- **Estado**: `React Hooks` (useState, useContext)
+- **Linting**: `ESLint`
 
-## Main Libraries and Tools
-- **Next.js**: React framework with SSR, SSG, API routes and automatic optimizations.
-- **Tailwind CSS**: CSS utility framework for fast and consistent styling.
-- **TypeScript**: static type safety and better DX.
-- **Axios**: HTTP client with interceptors for authorization and error handling.
-- **React Hook Form**: efficient management of reactive forms.
-- **Zod**: schema validation at compile-time and runtime.
-- **ESLint**: code linting to maintain quality and consistency.
+## Librerias y Herramientas Principales
+- **Next.js**: Framework React con SSR, SSG, rutas y optimizaciones automaticas.
+- **Tailwind CSS**: Framework utilitario para estilado rapido y consistente.
+- **TypeScript**: Tipado estatico y mejor DX.
+- **Axios**: Cliente HTTP con interceptores para autorizacion y manejo de errores.
+- **React Hook Form**: Manejo eficiente de formularios reactivos.
+- **Zod**: Validacion de esquemas en compilacion y runtime.
+- **ESLint**: Analisis estatico de codigo para mantener calidad y consistencia.
 
-## Repository Structure (Summary)
-- **src/app/**: application routes, root layout and main pages (drivers, locations, packages, shipments, vehicles).
-  - **app/driver/**: role-protected driver routes with AuthGuard (`/driver/shipments`, `/driver/scanner`, `/driver/profile`)
-  - **app/shipments/[id]**: dynamic shipment detail page with timeline and package list
-- **src/components/**: reusable components (lists, forms, filters, modals, header, sidebar).
-  - `DepotIngressScanner.tsx`: barcode scanner with package collection workflow, smart action buttons
-  - `AuthGuard.tsx`: role-based route protection (Admin / Driver)
-  - `SectionHeader.tsx`: dynamic page titles based on route
-- **src/hooks/**: custom hooks for fetching data, managing local state and validating logic.
-- **src/api/**: Axios configuration, services for endpoints (drivers, vehicles, locations, packages, shipments).
-- **src/schemas/**: Zod validation schemas for forms and data input.
-- **src/types/**: shared TypeScript types for DTOs and domain model.
-  - `scanner.ts`: PackageForScannerDto type
-- **public/**: static assets.
+## Estructura del Repositorio (Resumen)
+- **src/app/**: Rutas de la aplicacion, layout raiz y paginas principales (drivers, locations, packages, shipments, vehicles).
+  - **app/driver/**: Rutas protegidas por rol Driver con AuthGuard (`/driver/shipments`, `/driver/scanner`, `/driver/profile`).
+  - **app/shipments/[id]**: Pagina dinamica de detalle de envio con timeline y lista de paquetes.
+- **src/components/**: Componentes reutilizables (listas, formularios, filtros, modales, header, sidebar).
+  - `DepotIngressScanner.tsx`: Scanner de codigo de barras con flujo de recoleccion y botones de accion inteligentes.
+  - `AuthGuard.tsx`: Proteccion de rutas por rol (Admin / Driver).
+  - `SectionHeader.tsx`: Titulos dinamicos segun la ruta.
+- **src/hooks/**: Hooks custom para consultar datos, manejar estado local y validar logica.
+- **src/api/**: Configuracion de Axios y servicios por endpoint (drivers, vehicles, locations, packages, shipments).
+- **src/schemas/**: Esquemas Zod para validacion de formularios e inputs.
+- **src/types/**: Tipos compartidos para DTOs y modelo de dominio.
+  - `scanner.ts`: Tipo `PackageForScannerDto`.
+- **public/**: Recursos estaticos.
 
-## Best Practices and Conventions Applied
-- **Separation of Concerns**: components (presentation), hooks (logic), api (communication).
-- **Reusable Components**: generic lists, forms, filters and modals to avoid duplication.
-- **Custom Hooks**: encapsulate data logic and state (e.g. `useDrivers`, `useVehicles`, `usePackages`).
-- **Layered Validation**: Zod for schemas and React Hook Form for reactive UX.
-- **Typed API Client**: Axios configured with TypeScript types for HTTP call safety.
-- **Authentication**: HTTP client interceptors to manage JWT tokens; JWT token parsed for role extraction.
-- **Role-Based Access Control**: AuthGuard component protects routes based on JWT audience claim (Admin / Driver roles).
-- **Responsive Design**: Tailwind CSS with breakpoints for multiple screen sizes; mobile-optimized scanner UI.
-- **Error Handling**: centralized error capture and user notification.
-- **Loading States**: UI feedback while loading data (spinners, skeletons).
-- **Dynamic Modals and Forms**: controlled components for creating, updating and deleting resources.
-- **State-Aware UI**: Scanner and actions adapt based on package status and shipment type.
+## Buenas Practicas y Convenciones Aplicadas
+- **Separacion de responsabilidades**: componentes (presentacion), hooks (logica), api (comunicacion).
+- **Componentes reutilizables**: listas, formularios, filtros y modales genericos para evitar duplicacion.
+- **Hooks custom**: encapsulan logica de datos y estado (por ejemplo `useDrivers`, `useVehicles`, `usePackages`).
+- **Validacion en capas**: Zod para esquemas y React Hook Form para UX reactiva.
+- **Cliente API tipado**: Axios configurado con tipos TypeScript para mayor seguridad.
+- **Autenticacion**: interceptores HTTP para manejar JWT; parseo de token para extraer roles.
+- **Control de acceso por rol**: AuthGuard protege rutas segun roles Admin/Driver.
+- **Diseno responsive**: Tailwind con breakpoints para multiples tamanos de pantalla.
+- **Manejo de errores**: captura centralizada y notificacion al usuario.
+- **Estados de carga**: feedback visual durante consultas (loading, placeholders, etc.).
+- **Modales y formularios dinamicos**: componentes controlados para crear/editar/eliminar recursos.
+- **UI basada en estado**: scanner y acciones se adaptan segun estado del paquete y tipo de envio.
 
-## Implemented Patterns
-Below are the frontend patterns applied in the project:
+## Patrones Implementados
+- **Custom Hooks Pattern**: encapsulacion de fetching, estado y errores en hooks reutilizables.
+- **Component Composition**: composicion de componentes base (Form, List, Filter, Modal) para vistas especificas.
+- **API Client Pattern**: centralizacion del cliente HTTP en `api/axiosClient.ts` con interceptores.
+- **Schema Validation Pattern**: validaciones declarativas con Zod, integradas con React Hook Form.
+- **Role-Based Routing**: parseo de JWT para extraer roles y proteger rutas con `AuthGuard`.
+- **Context API**: estado global opcional para autenticacion/tema segun providers disponibles.
+- **Middleware / Interceptors**: inyeccion de JWT y manejo de errores 401/403.
+- **Controlled Components**: formularios controlados con validacion en tiempo real.
+- **Responsive Layout**: Sidebar + Main Content para mobile/tablet/desktop.
+- **Loading & Error States**: feedback visual para loading, success y error.
+- **Scanner State Machine**: flujo de acciones segun estado del paquete:
+  - Pending -> Collect | Skip
+  - InTransit -> Drop at Depot
+  - AtDepot -> Customer Pickup (solo LastMile)
 
-- **Custom Hooks Pattern**: encapsulation of data logic (fetching, state, errors) in reusable hooks. Examples: `useDrivers`, `useVehicles`, `usePackages`, `useShipments`, `useLocations`.
+## Vistas de la Aplicacion
+A continuacion se muestran las vistas principales del frontend con una breve descripcion funcional.
 
-- **Component Composition**: standard components (Form, List, Filter, Modal) composed to create specific views. Example: `DriverList`, `VehicleForm`, `PackageDetail`.
+### Dashboard de Driver
+![Dashboard de Driver](./assets/DriverDashboard.psd.png)
+Vista inicial para el conductor con accesos rapidos a sus tareas del dia, metricas basicas y navegacion operativa.
 
-- **API Client Pattern**: centralization of HTTP client in `api/axiosClient.ts` with interceptors for authorization, content type and global error handling.
+### Mis Envios (Driver)
+![Mis Envios Driver](./assets/DriverShipmentView.psd.png)
+Permite al conductor ver sus envios asignados, su estado actual y el avance de entrega por cada orden.
 
-- **Schema Validation Pattern**: declarative validation with Zod in `schemas/` and binding to forms with React Hook Form.
+### Scanner
+![Scanner](./assets/Scanner.psd.png)
+Flujo de escaneo de codigos para registrar recoleccion, ingreso a deposito y entrega, aplicando reglas por estado.
 
-- **Role-Based Routing**: JWT token parsing to extract user roles (Admin / Driver); `AuthGuard` component protects routes and conditionally renders UI based on role.
+### Vista Mobile
+![Vista Mobile](./assets/PhoneView.psd.png)
+Diseño adaptado a celular para operacion en campo, priorizando acciones grandes y navegacion rapida.
 
-- **Context API**: optional global state for authentication and themes (if AuthGuard and providers are implemented).
+### Gestion de Conductores
+![Drivers](./assets/Drivers.psd.png)
+Listado y administracion de conductores: consulta, filtros, alta, edicion y control de disponibilidad.
 
-- **Middleware / Interceptors**: Axios interceptors to inject JWT tokens and handle 401/403 errors.
+### Gestion de Vehiculos
+![Vehicles](./assets/Vehicles.psd.png)
+Pantalla para administrar la flota, asignaciones y estado operativo de los vehiculos.
 
-- **Controlled Components**: React forms controlled with `react-hook-form` for real-time validation.
+### Gestion de Ubicaciones
+![Locations](./assets/Locations.psd.png)
+Permite crear y administrar sucursales/depositos con su informacion operativa.
 
-- **Responsive Layout**: Sidebar + Main Content with Tailwind CSS; adapts breakpoints for mobile/tablet/desktop; mobile-optimized scanner for field operations.
+### Gestion de Paquetes
+![Packages](./assets/Packages.psd.png)
+Vista de paquetes con busqueda, filtros y acciones segun ciclo logistico.
 
-- **Loading & Error States**: conditional components for visual feedback during loading, success and error.
+### Detalle de Paquete
+![Detalle de Paquete](./assets/PackageInfo.psd.png)
+Muestra informacion completa del paquete, su trazabilidad y datos asociados al envio.
 
-- **Scanner State Machine**: `DepotIngressScanner` implements state-aware actions based on package status:
-  - Pending → Collect | Skip
-  - InTransit → Drop at Depot
-  - AtDepot → Customer Pickup (LastMile only)
-  - Smart validation for shipment type before showing actions
+### Gestion de Envios
+![Shipments](./assets/Shipments.psd.png)
+Administra envios con estados, asignaciones y seguimiento de progreso general.
 
-- **Shipment Management UI**: 
-  - Tab-based filtering (In Progress / Completed / All)
-  - Dynamic column visibility based on shipment status
-  - Timeline visualization for package delivery progress
-  - Modal-based shipment selection for legacy assignment workflows
+### Crear Envio - Paso 1
+![Create Shipment 1](./assets/CreateShipment1.psd.png)
+Primer paso del alta de envio: datos base, tipo de envio y parametros principales.
 
-## How to Run Locally
-1. Ensure you have `Node.js 18+` and `npm` or `pnpm` installed.
-2. Clone the repository and navigate to the folder:
+### Crear Envio - Paso 2
+![Create Shipment 2](./assets/CreateShipment2.psd.png)
+Segundo paso para asociar paquetes, validar informacion y definir detalles operativos.
+
+### Crear Envio - Paso 3
+![Create Shipment 3](./assets/CreateShipment3.psd.png)
+Paso final de confirmacion y revision antes de crear el envio.
+
+### Gestion de Usuarios
+![Users](./assets/Users.psd.png)
+Administracion de usuarios del sistema: roles, activacion y permisos de acceso.
+
+## Como Ejecutarlo en Local
+1. Asegurate de tener instalado `Node.js 18+` y `npm` o `pnpm`.
+2. Clona el repositorio y entra en la carpeta:
 
 ```bash
 cd logicore-front
 ```
 
-3. Install dependencies:
+3. Instala dependencias:
 
 ```bash
 npm install
-# or
+# o
 pnpm install
 ```
 
-4. Copy/adjust the API base URL in `src/api/axiosClient.ts` (usually `http://localhost:5000` in development).
+4. Ajusta la URL base del backend en `src/api/axiosClient.ts` (normalmente `http://localhost:5000` en desarrollo).
 
-5. Run the development server:
+5. Levanta el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
+# o
 pnpm dev
 ```
 
-6. Open in your browser:
+6. Abre en el navegador:
 
-```
+```text
 http://localhost:3000
 ```
 
-## Environment Variables
-Create a `.env.local` file in the project root if necessary:
+## Variables de Entorno
+Crea un archivo `.env.local` en la raiz del proyecto si lo necesitas:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
-Make sure the backend is running at the specified URL.
+Asegurate de tener el backend corriendo en esa URL.
 
-## Production Build
+## Build de Produccion
 ```bash
 npm run build
 npm run start
 ```
 
-## Linting and Testing
+## Linting
 ```bash
-npm run lint      # Run ESLint
-npm run dev       # Development with hot-reload
+npm run lint
 ```
 
 ## Deployment
-- Compatible with platforms that support Next.js: Vercel, Netlify, Railway, AWS Amplify, etc.
-- Simply connect the repo to Vercel for automatic deployment on each push to main.
+- Compatible con plataformas que soportan Next.js: Vercel, Netlify, Railway, AWS Amplify, etc.
+- Puedes conectar el repositorio a Vercel para deploy automatico en cada push a main.
 
-## Next Steps
-- Add unit tests (Jest + React Testing Library).
-- Integrate WebSocket for real-time shipment updates.
-- Optimize scanner performance for field operations (offline mode, batch updates).
-- Add driver location tracking for better fleet visibility.
+## Proximos Pasos
+- Agregar tests unitarios (Jest + React Testing Library).
+- Integrar WebSocket para actualizaciones en tiempo real de envios.
+- Optimizar rendimiento del scanner para operacion en campo (modo offline, updates por lote).
+- Agregar tracking de ubicacion del conductor para mayor visibilidad de flota.

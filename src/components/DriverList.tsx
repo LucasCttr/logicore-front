@@ -75,6 +75,7 @@ export default function DriverList() {
               <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">License</th>
               <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">License Expiry</th>
               <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Insurance</th>
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Assigned Vehicle</th>
               <th className="text-left px-7 py-3 text-sm font-semibold text-gray-700">Status</th>
               <th className="text-right px-6 py-3 text-sm font-semibold text-gray-700">Actions</th>
             </tr>
@@ -94,6 +95,9 @@ export default function DriverList() {
               const now = new Date();
               const isLicenseExpired = licenseExpiry < now;
               const isInsuranceExpired = insuranceExpiry < now;
+              const vehicleLabel = driver.assignedVehiclePlate
+                ? `${driver.assignedVehiclePlate}${driver.assignedVehicleMake || driver.assignedVehicleModel ? ` (${[driver.assignedVehicleMake, driver.assignedVehicleModel].filter(Boolean).join(' ')})` : ''}`
+                : (driver.assignedVehicleId ? `ID ${driver.assignedVehicleId.substring(0, 8)}...` : 'Unassigned');
 
               const formatDate = (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -127,6 +131,9 @@ export default function DriverList() {
                       {formatDate(insuranceExpiry)}
                       {isInsuranceExpired && <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Expired</span>}
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-gray-700">{vehicleLabel}</div>
                   </td>
                   <td className="px-6 py-4">
                     <span

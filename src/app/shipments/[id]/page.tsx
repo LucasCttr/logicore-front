@@ -6,19 +6,23 @@ import AuthGuard from '../../../components/AuthGuard';
 import ShipmentDetailView from '../../../components/ShipmentDetailView';
 import api from '../../../api/axiosClient';
 import { getDriverById } from '../../../api/drivers';
+import { getLocations } from '../../../api/locations';
 import { getPackageById, markPackageAsDelivered } from '../../../api/packages';
 import { finalizeShipment } from '../../../api/shipments';
 import { parseShipmentStatus } from '../../../api/shipmentMappers';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
+import type LocationDto from '../../../types/locations';
 
 interface ShipmentDetails {
   id: string;
   routeCode: string | null;
   status: number;
+  type?: number | null;
   driverId: string | null;
   vehicleId: string | null;
   destinationLocationId: number | null;
+  destinationLocationName?: string | null;
   createdAt: string | null;
   estimatedDelivery: string | null;
   shippedAt: string | null;
@@ -86,6 +90,20 @@ export default function ShipmentDetailsPage() {
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
   const [markingDelivery, setMarkingDelivery] = useState<Set<string>>(new Set());
   const [finalizingShipment, setFinalizingShipment] = useState(false);
+  const [locations, setLocations] = useState<LocationDto[]>([]);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const locs = await getLocations();
+        setLocations(Array.isArray(locs) ? locs : []);
+      } catch (err) {
+        console.error('Error loading locations:', err);
+      }
+    };
+
+    fetchLocations();
+  }, []);
 
   useEffect(() => {
     const fetchShipment = async () => {
@@ -216,6 +234,35 @@ export default function ShipmentDetailsPage() {
     }
   };
 
+  const getDepotNameByLocationId = (locationId: number | null): string | null => {
+    if (!locationId || !locations.length) return null;
+
+    // Existing APIs expose numeric location IDs while location entities use GUIDs.
+    // Keep parity with current app behavior: resolve by creation order (1-based).
+    const sorted = [...locations]
+      .filter((loc) => loc.createdAt)
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+
+    if (locationId > 0 && locationId <= sorted.length) {
+      return sorted[locationId - 1]?.name ?? null;
+    }
+
+    return null;
+  };
+
+  const getDestinationLabel = (shipmentData: ShipmentDetails): string => {
+    if (shipmentData.type === 2 || !shipmentData.destinationLocationId) {
+      return 'Last-Mile';
+    }
+
+    if (shipmentData.destinationLocationName) {
+      return shipmentData.destinationLocationName;
+    }
+
+    return getDepotNameByLocationId(shipmentData.destinationLocationId)
+      ?? `Depot #${shipmentData.destinationLocationId}`;
+  };
+
   const handleFinalizeShipment = async () => {
     try {
       setFinalizingShipment(true);
@@ -329,8 +376,8 @@ export default function ShipmentDetailsPage() {
                     <p className="text-lg text-gray-900 mt-1">{getStatusLabel(shipment.status)}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Destination Location ID</label>
-                    <p className="text-lg text-gray-900 mt-1">{shipment.destinationLocationId || 'Last-Mile (Door-to-Door)'}</p>
+                    <label className="text-sm font-medium text-gray-600">Destination</label>
+                    <p className="text-lg text-gray-900 mt-1">{getDestinationLabel(shipment)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Total Packages</label>

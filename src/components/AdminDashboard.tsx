@@ -6,6 +6,7 @@ import { getShipments } from '../api/shipments';
 import { getDrivers } from '../api/drivers';
 import { getVehicles } from '../api/vehicles';
 import { getPackages } from '../api/packages';
+import { parseShipmentStatus } from '../api/shipmentMappers';
 
 interface ShipmentStats {
   total: number;
@@ -45,12 +46,13 @@ export default function AdminDashboard() {
         ]);
 
         const shipmentItems = shipmentsRes?.items ?? [];
+        const statuses = shipmentItems.map((s: { status?: unknown }) => parseShipmentStatus(s.status));
         const shipmentStats = {
           total: shipmentItems.length,
-          pending: shipmentItems.filter((s: any) => s.status === 0).length,
-          active: shipmentItems.filter((s: any) => s.status === 1).length,
-          completed: shipmentItems.filter((s: any) => s.status === 2).length,
-          canceled: shipmentItems.filter((s: any) => s.status === 3).length,
+          pending: statuses.filter((status) => status === 0).length,
+          active: statuses.filter((status) => status === 1 || status === 2).length,
+          completed: statuses.filter((status) => status === 3 || status === 5).length,
+          canceled: statuses.filter((status) => status === 4).length,
         };
 
         setData({

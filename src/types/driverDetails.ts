@@ -11,6 +11,9 @@ export interface DriverDetailsWithUser {
   licenseExpiry: string;
   insuranceExpiry: string;
   assignedVehicleId?: string;
+  assignedVehiclePlate?: string | null;
+  assignedVehicleMake?: string | null;
+  assignedVehicleModel?: string | null;
   createdAt: string;
   updatedAt?: string;
 }

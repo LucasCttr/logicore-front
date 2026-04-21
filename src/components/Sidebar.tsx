@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Home, Users, Package, Scan, Truck, Car, MapPin, BoxesIcon, LogOut, User } from 'lucide-react';
+import { Home, Users, Package, Scan, Truck, Car, MapPin, BoxesIcon, LogOut, User, Menu, X } from 'lucide-react';
 
 function getRolesFromToken(token: string): string[] {
   try {
@@ -24,6 +24,7 @@ export default function Sidebar() {
   const pathname = usePathname() || '/';
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const read = () => {
@@ -88,6 +89,16 @@ export default function Sidebar() {
     }
   }
 
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
+
+  const closeMenuOnMobile = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsMenuOpen(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -95,7 +106,29 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-68 bg-gray-800 text-white h-screen flex flex-col">
+    <>
+      <button
+        type="button"
+        onClick={() => setIsMenuOpen((prev) => !prev)}
+        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-gray-800 text-white shadow-lg"
+        aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+      >
+        {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
+      </button>
+
+      {isMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/40 z-30"
+          onClick={() => setIsMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`w-68 bg-gray-800 text-white h-screen flex flex-col fixed md:static top-0 left-0 z-40 transform transition-transform duration-300 ${
+          isMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
       {/* Logo */}
       <div className="p-10 border-b border-gray-700 flex flex-col items-center justify-center">
         <BoxesIcon size={40} className="text-blue-400 mb-3" />
@@ -111,6 +144,7 @@ export default function Sidebar() {
             <li key={l.href}>
               <Link
                 href={l.href}
+                onClick={closeMenuOnMobile}
                 className={`block px-4 py-4 rounded-r-lg transition-all duration-200 text-xl font-light flex items-center gap-7 tracking-tight ${
                   pathname === l.href
                     ? 'bg-gradient-to-r from-blue-600 to-blue-500/30 text-white font-medium border-l-4 border-blue-400 pl-3 shadow-lg shadow-blue-500/20'
@@ -161,6 +195,7 @@ export default function Sidebar() {
         ) : (
           <Link
             href="/login"
+            onClick={closeMenuOnMobile}
             className={`block w-full text-center px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 ${
               pathname === '/login'
                 ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20'
@@ -172,6 +207,7 @@ export default function Sidebar() {
           </Link>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
