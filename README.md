@@ -99,22 +99,22 @@ A continuacion se muestran las vistas principales del frontend con una breve des
 ![Dashboard de Admin](./assets/AdminDashboard.psd.png)
 Vista principal para administradores con resumen operativo, accesos directos de gestion y monitoreo general de la operacion logistica.
 
-### Dashboard de Driver
+### Dashboard mobile de Driver
 ![Dashboard de Driver](./assets/DriverDashboard.psd.png)
 
 Vista inicial para el conductor con accesos rapidos a sus tareas del dia, metricas basicas y navegacion operativa.
-
-### Mis Envios (Driver)
-![Detalle de envio](./assets/DriverShipmentView.psd.png)
-Muestra informacion de envios: tipo, destino, ubicacion, cambio de estados, chofer, paquetes transportados.
 
 ### Gestion de Envios
 ![Shipments](./assets/Shipments.psd.png)
 Administra envios con estados, asignaciones y seguimiento de progreso general.
 
-### Vista Mobile
+### Detalle de envios
+![Detalle de envio](./assets/DriverShipmentView.psd.png)
+Muestra informacion de envios: tipo, destino, ubicacion, cambio de estados, chofer, paquetes transportados.
+
+### Vista Mobile de envios
 ![Vista Mobile](./assets/PhoneView.psd.png)
-Diseño adaptado a celular para operacion en campo, priorizando acciones grandes y navegacion rapida.
+Diseño adaptado a celular, muestra solo los envios asignados al chofer logeado en el sistema.
 
 ### Gestion de Paquetes
 ![Packages](./assets/Packages.psd.png)
