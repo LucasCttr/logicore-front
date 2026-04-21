@@ -6,7 +6,7 @@
   - **Interfaz Admin**: CRUD completo para conductores, vehiculos, ubicaciones, paquetes, envios y usuarios.
   - **Interfaz Driver**: Scanner optimizado para celular, vista de mis envios y gestion de perfil/licencia.
   - **Scanner de Paquetes**: Flujo basado en codigo de barras con acciones segun estado (recolectar, dejar en deposito, entregar).
-- **Backend**: [.NET API: https://github.com/LucasCttr/LogiCoreBack]
+- **Backend**: [.NET API: https://github.com/LucasCttr/logicore-back]
 
 ## Arquitectura
 - **Patron**: Modular basado en componentes, separando responsabilidades en `components`, `hooks`, `api`, `app` y `types`.
