@@ -9,11 +9,6 @@
 - [Buenas Practicas y Convenciones Aplicadas](#buenas-practicas-y-convenciones-aplicadas)
 - [Patrones Implementados](#patrones-implementados)
 - [Vistas de la Aplicacion](#vistas-de-la-aplicacion)
-- [Como Ejecutarlo en Local](#como-ejecutarlo-en-local)
-- [Variables de Entorno](#variables-de-entorno)
-- [Build de Produccion](#build-de-produccion)
-- [Linting](#linting)
-- [Deployment](#deployment)
 - [Proximos Pasos](#proximos-pasos)
 
 ## Descripcion
