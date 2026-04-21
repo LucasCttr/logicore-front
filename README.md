@@ -84,6 +84,10 @@
 ## Vistas de la Aplicacion
 A continuacion se muestran las vistas principales del frontend con una breve descripcion funcional.
 
+### Dashboard de Admin
+![Dashboard de Admin](./assets/AdminDashboard.psd.png)
+Vista principal para administradores con resumen operativo, accesos directos de gestion y monitoreo general de la operacion logistica.
+
 ### Dashboard de Driver
 ![Dashboard de Driver](./assets/DriverDashboard.psd.png)
 Vista inicial para el conductor con accesos rapidos a sus tareas del dia, metricas basicas y navegacion operativa.
