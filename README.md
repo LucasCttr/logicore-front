@@ -110,12 +110,12 @@ Vista principal para administradores con resumen operativo, accesos directos de 
 Vista inicial para el conductor con accesos rapidos a sus tareas del dia, metricas basicas y navegacion operativa.
 
 ### Mis Envios (Driver)
-![Mis Envios Driver](./assets/DriverShipmentView.psd.png)
-Permite al conductor ver sus envios asignados, su estado actual y el avance de entrega por cada orden.
+![Detalle de envio](./assets/DriverShipmentView.psd.png)
+Muestra informacion de envios: tipo, destino, ubicacion, cambio de estados, chofer, paquetes transportados.
 
-### Scanner
-![Scanner](./assets/Scanner.psd.png)
-Flujo de escaneo de codigos para registrar recoleccion, ingreso a deposito y entrega, aplicando reglas por estado.
+### Gestion de Envios
+![Shipments](./assets/Shipments.psd.png)
+Administra envios con estados, asignaciones y seguimiento de progreso general.
 
 ### Vista Mobile
 ![Vista Mobile](./assets/PhoneView.psd.png)
@@ -129,10 +129,6 @@ Vista de paquetes con busqueda, filtros y acciones segun ciclo logistico.
 ![Detalle de Paquete](./assets/PackageInfo.psd.png)
 Muestra informacion completa del paquete, su trazabilidad y datos asociados al envio.
 
-### Gestion de Envios
-![Shipments](./assets/Shipments.psd.png)
-Administra envios con estados, asignaciones y seguimiento de progreso general.
-
 ### Crear Envio - Paso 1
 ![Create Shipment 1](./assets/CreateShipment1.psd.png)
 Primer paso del alta de envio: datos base, tipo de envio y parametros principales.
@@ -144,6 +140,10 @@ Segundo paso para asociar paquetes, validar informacion y definir detalles opera
 ### Crear Envio - Paso 3
 ![Create Shipment 3](./assets/CreateShipment3.psd.png)
 Paso final de confirmacion y revision antes de crear el envio.
+
+### Scanner
+![Scanner](./assets/Scanner.psd.png)
+Flujo de escaneo de codigos para registrar recoleccion, ingreso a deposito y entrega, aplicando reglas por estado.
 
 ### Gestion de Conductores
 ![Drivers](./assets/Drivers.psd.png)
