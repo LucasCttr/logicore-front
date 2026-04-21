@@ -13,9 +13,9 @@
 
 ## Descripcion
 - **Proposito**: Interfaz web moderna para la plataforma LogiCore, como complemento visual del backend. Proyecto de aprendizaje en Next.js con buenas practicas de frontend.
-- **Que hace**: Provee una UI por roles para gestionar conductores, vehiculos, ubicaciones, paquetes y envios, con formularios reactivos, validacion de entradas y consumo de la [LogiCore API](https://github.com/LucasCttr/LogiCoreBack).
-  - **Interfaz Admin**: CRUD completo para conductores, vehiculos, ubicaciones, paquetes, envios y usuarios.
-  - **Interfaz Driver**: Scanner optimizado para celular, vista de mis envios y gestion de perfil/licencia.
+- **Que hace**: Provee una UI por roles para gestionar conductores, vehiculos, ubicaciones, paquetes y envios, con formularios reactivos, validacion de entradas y consumo de la [LogiCore API](https://github.com/LucasCttr/logicore-back).
+  - **Interfaz Admin**: CRUD completo para conductores, vehiculos, ubicaciones, paquetes, envios, usuarios y Dashboard.
+  - **Interfaz Driver**: Scanner, vista de mis envios y gestion de perfil/licencia adaptadas para version mobile.
   - **Scanner de Paquetes**: Flujo basado en codigo de barras con acciones segun estado (recolectar, dejar en deposito, entregar).
 - **Backend**: [.NET API: https://github.com/LucasCttr/logicore-back]
 
@@ -61,20 +61,6 @@
 - **src/types/**: Tipos compartidos para DTOs y modelo de dominio.
   - `scanner.ts`: Tipo `PackageForScannerDto`.
 - **public/**: Recursos estaticos.
-
-## Buenas Practicas y Convenciones Aplicadas
-- **Separacion de responsabilidades**: componentes (presentacion), hooks (logica), api (comunicacion).
-- **Componentes reutilizables**: listas, formularios, filtros y modales genericos para evitar duplicacion.
-- **Hooks custom**: encapsulan logica de datos y estado (por ejemplo `useDrivers`, `useVehicles`, `usePackages`).
-- **Validacion en capas**: Zod para esquemas y React Hook Form para UX reactiva.
-- **Cliente API tipado**: Axios configurado con tipos TypeScript para mayor seguridad.
-- **Autenticacion**: interceptores HTTP para manejar JWT; parseo de token para extraer roles.
-- **Control de acceso por rol**: AuthGuard protege rutas segun roles Admin/Driver.
-- **Diseno responsive**: Tailwind con breakpoints para multiples tamanos de pantalla.
-- **Manejo de errores**: captura centralizada y notificacion al usuario.
-- **Estados de carga**: feedback visual durante consultas (loading, placeholders, etc.).
-- **Modales y formularios dinamicos**: componentes controlados para crear/editar/eliminar recursos.
-- **UI basada en estado**: scanner y acciones se adaptan segun estado del paquete y tipo de envio.
 
 ## Patrones Implementados
 - **Custom Hooks Pattern**: encapsulacion de fetching, estado y errores en hooks reutilizables.
@@ -156,6 +142,19 @@ Permite crear y administrar sucursales/depositos con su informacion operativa.
 ![Users](./assets/Users.psd.png)
 Administracion de usuarios del sistema: roles, activacion y permisos de acceso.
 
+## Buenas Practicas y Convenciones Aplicadas
+- **Separacion de responsabilidades**: componentes (presentacion), hooks (logica), api (comunicacion).
+- **Componentes reutilizables**: listas, formularios, filtros y modales genericos para evitar duplicacion.
+- **Hooks custom**: encapsulan logica de datos y estado (por ejemplo `useDrivers`, `useVehicles`, `usePackages`).
+- **Validacion en capas**: Zod para esquemas y React Hook Form para UX reactiva.
+- **Cliente API tipado**: Axios configurado con tipos TypeScript para mayor seguridad.
+- **Autenticacion**: interceptores HTTP para manejar JWT; parseo de token para extraer roles.
+- **Control de acceso por rol**: AuthGuard protege rutas segun roles Admin/Driver.
+- **Diseno responsive**: Tailwind con breakpoints para multiples tamanos de pantalla.
+- **Manejo de errores**: captura centralizada y notificacion al usuario.
+- **Estados de carga**: feedback visual durante consultas (loading, placeholders, etc.).
+- **Modales y formularios dinamicos**: componentes controlados para crear/editar/eliminar recursos.
+- **UI basada en estado**: scanner y acciones se adaptan segun estado del paquete y tipo de envio.
 
 ## Proximos Pasos
 - Implementar/Terminar funcionalidades.
