@@ -1,5 +1,21 @@
 # LogiCore Front - Interfaz de Gestion Logistica
 
+## Indice
+- [Descripcion](#descripcion)
+- [Arquitectura](#arquitectura)
+- [Stack Tecnologico](#stack-tecnologico)
+- [Librerias y Herramientas Principales](#librerias-y-herramientas-principales)
+- [Estructura del Repositorio (Resumen)](#estructura-del-repositorio-resumen)
+- [Buenas Practicas y Convenciones Aplicadas](#buenas-practicas-y-convenciones-aplicadas)
+- [Patrones Implementados](#patrones-implementados)
+- [Vistas de la Aplicacion](#vistas-de-la-aplicacion)
+- [Como Ejecutarlo en Local](#como-ejecutarlo-en-local)
+- [Variables de Entorno](#variables-de-entorno)
+- [Build de Produccion](#build-de-produccion)
+- [Linting](#linting)
+- [Deployment](#deployment)
+- [Proximos Pasos](#proximos-pasos)
+
 ## Descripcion
 - **Proposito**: Interfaz web moderna para la plataforma LogiCore, como complemento visual del backend. Proyecto de aprendizaje en Next.js con buenas practicas de frontend.
 - **Que hace**: Provee una UI por roles para gestionar conductores, vehiculos, ubicaciones, paquetes y envios, con formularios reactivos, validacion de entradas y consumo de la [LogiCore API](https://github.com/LucasCttr/LogiCoreBack).
