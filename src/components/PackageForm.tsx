@@ -9,6 +9,7 @@ import { useCreatePackage } from '../hooks/usePackages';
 import type { CreatePackageDto } from '../types/packages';
 import { useRouter } from 'next/navigation';
 import { useLocations } from '../hooks/useLocations';
+import api from '../api/axiosClient';
 
 export default function PackageForm() {
   const router = useRouter();
@@ -189,8 +190,9 @@ export default function PackageForm() {
                 }
                 originTimer.current = window.setTimeout(async () => {
                   try {
-                    const res = await fetch(`${apiBase}/api/addresses/autocomplete?q=${encodeURIComponent(val)}`);
-                    if (res.ok) setOriginSuggestions(await res.json());
+                    const res = await api.get('/api/addresses/autocomplete', { params: { q: val } });
+                    const payload = res.data;
+                    if (payload?.isSuccess) setOriginSuggestions(payload.value ?? []);
                   } catch (_) { /* ignore */ }
                 }, 250);
               }}
@@ -207,7 +209,7 @@ export default function PackageForm() {
                       setValue('origin', s as any, { shouldValidate: true, shouldDirty: true });
                       setOriginSuggestions([]);
                       // record selection
-                      try { await fetch(`${apiBase}/api/addresses/selected`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: s }) }); } catch (_) {}
+                      try { await api.post('/api/addresses/selected', { address: s }); } catch (_) {}
                     }}
                   >
                     {s}
@@ -239,8 +241,9 @@ export default function PackageForm() {
                 }
                 destTimer.current = window.setTimeout(async () => {
                   try {
-                    const res = await fetch(`${apiBase}/api/addresses/autocomplete?q=${encodeURIComponent(val)}`);
-                    if (res.ok) setDestinationSuggestions(await res.json());
+                    const res = await api.get('/api/addresses/autocomplete', { params: { q: val } });
+                    const payload = res.data;
+                    if (payload?.isSuccess) setDestinationSuggestions(payload.value ?? []);
                   } catch (_) { /* ignore */ }
                 }, 250);
               }}
@@ -256,7 +259,7 @@ export default function PackageForm() {
                     onClick={async () => {
                       setValue('destination', s as any, { shouldValidate: true, shouldDirty: true });
                       setDestinationSuggestions([]);
-                      try { await fetch(`${apiBase}/api/addresses/selected`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: s }) }); } catch (_) {}
+                      try { await api.post('/api/addresses/selected', { address: s }); } catch (_) {}
                     }}
                   >
                     {s}
