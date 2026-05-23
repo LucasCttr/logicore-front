@@ -66,9 +66,19 @@ export type PackagePublicHistoryDto = {
 };
 
 export type PackageInternalHistoryDto = {
-  at: string;
-  status: string;
+  fromStatus?: string | null;
+  toStatus?: string | null;
+  occurredAt: string;
+  notes?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  userName?: string | null;
+  userRoles?: string | null;
+  locationId?: number | null;
+  shipmentId?: string | null;
   note?: string | null;
+  at?: string;
+  status?: string;
 };
 
 export default Package;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,6 +9,7 @@ import { useCreatePackage } from '../hooks/usePackages';
 import type { CreatePackageDto } from '../types/packages';
 import { useRouter } from 'next/navigation';
 import { useLocations } from '../hooks/useLocations';
+import { getAddressSuggestions, recordSelectedAddress } from '../api/addresses';
 
 export default function PackageForm() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function PackageForm() {
 
   const resolver = zodResolver(createPackageSchema) as Resolver<CreatePackageSchema>;
 
-  const { register, handleSubmit, formState, setValue, watch } = useForm<CreatePackageSchema>({
+  const { register, handleSubmit, formState, setValue } = useForm<CreatePackageSchema>({
     resolver,
   });
 
@@ -31,8 +32,6 @@ export default function PackageForm() {
   const originTimer = useRef<number | null>(null);
   const destTimer = useRef<number | null>(null);
   const minPrefix = 3;
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5074';
-
   const onSubmit = async (data: CreatePackageSchema) => {
     const payload: CreatePackageDto = {
       // Tracking number is auto-generated on backend if not provided
@@ -74,8 +73,8 @@ export default function PackageForm() {
         });
       }
       router.push('/packages');
-    } catch (err: any) {
-      setSubmitError(err?.message ?? 'Error');
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : 'Error');
     } finally {
       setSubmitting(false);
     }
@@ -179,9 +178,9 @@ export default function PackageForm() {
             <input
               list="locations-origin"
               {...register('origin')}
-              onInput={(e: any) => {
-                const val = e.target.value;
-                setValue('origin', val as any);
+              onInput={(e: React.FormEvent<HTMLInputElement>) => {
+                const val = e.currentTarget.value;
+                setValue('origin', val);
                 if (originTimer.current) window.clearTimeout(originTimer.current);
                 if (!val || val.trim().length < minPrefix) {
                   setOriginSuggestions([]);
@@ -189,9 +188,10 @@ export default function PackageForm() {
                 }
                 originTimer.current = window.setTimeout(async () => {
                   try {
-                    const res = await fetch(`${apiBase}/api/addresses/autocomplete?q=${encodeURIComponent(val)}`);
-                    if (res.ok) setOriginSuggestions(await res.json());
-                  } catch (_) { /* ignore */ }
+                    setOriginSuggestions(await getAddressSuggestions(val));
+                  } catch {
+                    /* ignore */
+                  }
                 }, 250);
               }}
               className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900"
@@ -204,10 +204,9 @@ export default function PackageForm() {
                     key={s}
                     className="px-3 py-2 hover:bg-slate-100 cursor-pointer text-sm text-slate-900"
                     onClick={async () => {
-                      setValue('origin', s as any, { shouldValidate: true, shouldDirty: true });
+                      setValue('origin', s, { shouldValidate: true, shouldDirty: true });
                       setOriginSuggestions([]);
-                      // record selection
-                      try { await fetch(`${apiBase}/api/addresses/selected`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: s }) }); } catch (_) {}
+                      try { await recordSelectedAddress(s); } catch {}
                     }}
                   >
                     {s}
@@ -217,7 +216,7 @@ export default function PackageForm() {
             )}
           </div>
           <datalist id="locations-origin">
-            {locations?.map((l: any) => (
+            {locations?.map((l) => (
               <option key={l.id} value={l.name} />
             ))}
           </datalist>
@@ -229,9 +228,9 @@ export default function PackageForm() {
             <input
               list="locations-destination"
               {...register('destination')}
-              onInput={(e: any) => {
-                const val = e.target.value;
-                setValue('destination', val as any);
+              onInput={(e: React.FormEvent<HTMLInputElement>) => {
+                const val = e.currentTarget.value;
+                setValue('destination', val);
                 if (destTimer.current) window.clearTimeout(destTimer.current);
                 if (!val || val.trim().length < minPrefix) {
                   setDestinationSuggestions([]);
@@ -239,9 +238,10 @@ export default function PackageForm() {
                 }
                 destTimer.current = window.setTimeout(async () => {
                   try {
-                    const res = await fetch(`${apiBase}/api/addresses/autocomplete?q=${encodeURIComponent(val)}`);
-                    if (res.ok) setDestinationSuggestions(await res.json());
-                  } catch (_) { /* ignore */ }
+                    setDestinationSuggestions(await getAddressSuggestions(val));
+                  } catch {
+                    /* ignore */
+                  }
                 }, 250);
               }}
               className="mt-1 block w-full border rounded px-3 py-2 bg-white text-slate-900"
@@ -254,9 +254,9 @@ export default function PackageForm() {
                     key={s}
                     className="px-3 py-2 hover:bg-slate-100 cursor-pointer text-sm text-slate-900"
                     onClick={async () => {
-                      setValue('destination', s as any, { shouldValidate: true, shouldDirty: true });
+                      setValue('destination', s, { shouldValidate: true, shouldDirty: true });
                       setDestinationSuggestions([]);
-                      try { await fetch(`${apiBase}/api/addresses/selected`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: s }) }); } catch (_) {}
+                      try { await recordSelectedAddress(s); } catch {}
                     }}
                   >
                     {s}
@@ -266,7 +266,7 @@ export default function PackageForm() {
             )}
           </div>
           <datalist id="locations-destination">
-            {locations?.map((l: any) => (
+            {locations?.map((l) => (
               <option key={l.id} value={l.name} />
             ))}
           </datalist>

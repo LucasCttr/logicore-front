@@ -21,7 +21,7 @@ export default function VehicleList() {
   let items = data?.items ?? [];
 
   // Aplicar filtros
-  items = items.filter((item: any) => {
+  items = items.filter((item: Vehicle) => {
     // Filtro de búsqueda
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = 

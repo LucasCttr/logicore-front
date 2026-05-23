@@ -1,4 +1,4 @@
-import api from './axiosClient';
+import { requestGraphQL, unwrapResult } from './graphqlClient';
 
 export type Vehicle = {
   id: string;
@@ -8,7 +8,6 @@ export type Vehicle = {
   maxWeightCapacity: number;
   maxVolumeCapacity: number;
   isActive?: boolean;
-  [key: string]: any;
 };
 
 export type CreateVehicleRequest = {
@@ -28,34 +27,93 @@ export type UpdateVehicleRequest = {
   isActive: boolean;
 };
 
-export async function getVehicles(): Promise<{ items: Vehicle[] }> {
-  const res = await api.get('/api/vehicles');
-  const payload: any = res.data;
-  const data = payload?.value ?? payload?.Value ?? payload;
-  const items = Array.isArray(data) ? data : (data?.items ?? []);
-  return { items };
+type VehiclesQueryResponse = {
+  getVehicles?: Vehicle[];
+  getVehicle?: Vehicle | null;
+  getAvailableVehicles?: Vehicle[];
+  createVehicle?: Vehicle;
+  updateVehicle?: Vehicle;
+  deleteVehicle?: boolean;
+  updateVehicleStatus?: Vehicle;
+};
+
+const VEHICLE_FIELDS = `
+  id
+  licensePlate
+  make
+  model
+  maxWeightCapacity
+  maxVolumeCapacity
+  isActive
+`;
+
+const GET_VEHICLES_QUERY = `
+  query GetVehicles {
+    getVehicles {
+      ${VEHICLE_FIELDS}
+    }
+  }
+`;
+
+const GET_VEHICLE_QUERY = `
+  query GetVehicle($id: ID!) {
+    getVehicle(id: $id) {
+      ${VEHICLE_FIELDS}
+    }
+  }
+`;
+
+const GET_AVAILABLE_VEHICLES_QUERY = `
+  query GetAvailableVehicles {
+    getAvailableVehicles {
+      ${VEHICLE_FIELDS}
+    }
+  }
+`;
+
+const CREATE_VEHICLE_MUTATION = `
+  mutation CreateVehicle($request: CreateVehicleDtoInput!) {
+    createVehicle(request: $request) {
+      ${VEHICLE_FIELDS}
+    }
+  }
+`;
+
+const UPDATE_VEHICLE_MUTATION = `
+  mutation UpdateVehicle($id: ID!, $request: UpdateVehicleDtoInput!) {
+    updateVehicle(id: $id, request: $request) {
+      ${VEHICLE_FIELDS}
+    }
+  }
+`;
+
+export async function getVehicles(): Promise<Vehicle[]> {
+  const response = await requestGraphQL<VehiclesQueryResponse>(GET_VEHICLES_QUERY);
+  return unwrapResult(response.getVehicles ?? []);
 }
 
 export async function getVehicleById(id: string): Promise<Vehicle> {
-  const res = await api.get(`/api/vehicles/${id}`);
-  const payload: any = res.data;
-  return payload?.value ?? payload?.Value ?? payload;
+  const response = await requestGraphQL<VehiclesQueryResponse, { id: string }>(GET_VEHICLE_QUERY, { id });
+  return unwrapResult(response.getVehicle);
 }
 
 export async function createVehicle(data: CreateVehicleRequest): Promise<Vehicle> {
-  const res = await api.post('/api/vehicles', data);
-  const payload: any = res.data;
-  return payload?.value ?? payload?.Value ?? payload;
+  const response = await requestGraphQL<VehiclesQueryResponse, { request: CreateVehicleRequest }>(
+    CREATE_VEHICLE_MUTATION,
+    { request: data },
+  );
+  return unwrapResult(response.createVehicle);
 }
 
 export async function updateVehicle(id: string, data: UpdateVehicleRequest): Promise<Vehicle> {
-  const res = await api.put(`/api/vehicles/${id}`, data);
-  const payload: any = res.data;
-  return payload?.value ?? payload?.Value ?? payload;
+  const response = await requestGraphQL<VehiclesQueryResponse, { id: string; request: UpdateVehicleRequest }>(
+    UPDATE_VEHICLE_MUTATION,
+    { id, request: data },
+  );
+  return unwrapResult(response.updateVehicle);
 }
 
 export async function getAvailableVehicles(): Promise<Vehicle[]> {
-  const res = await api.get('/api/vehicles/available');
-  const payload: any = res.data;
-  return payload?.value ?? payload?.Value ?? payload ?? [];
+  const response = await requestGraphQL<VehiclesQueryResponse>(GET_AVAILABLE_VEHICLES_QUERY);
+  return unwrapResult(response.getAvailableVehicles ?? []);
 }

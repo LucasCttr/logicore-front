@@ -1,56 +1,101 @@
-import axiosClient from './axiosClient';
+import type { CreateUserDto, PagedUserResult, UpdateUserDto, User } from '../types/users';
+import { requestGraphQL, unwrapResult } from './graphqlClient';
 
-export const getUsersAPI = async (page: number = 1, limit: number = 15) => {
-  try {
-    const response = await axiosClient.get(`/api/users`, {
-      params: {
-        page,
-        pageSize: limit,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    throw error;
-  }
+type UsersQueryResponse = {
+  getUsers?: PagedUserResult;
+  getUser?: User | null;
+  createUser?: User;
+  updateUser?: User;
+  toggleUserStatus?: boolean;
 };
 
-export const getUserByIdAPI = async (id: string) => {
-  try {
-    const response = await axiosClient.get(`/api/users/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    throw error;
+const USER_FIELDS = `
+  id
+  userName
+  email
+  firstName
+  lastName
+  emailConfirmed
+  isActive
+  roles
+  createdAt
+`;
+
+const USERS_QUERY = `
+  query GetUsers($page: Int!, $pageSize: Int!) {
+    getUsers(page: $page, pageSize: $pageSize) {
+      items {
+        ${USER_FIELDS}
+      }
+      total
+      page
+      pageSize
+    }
   }
+`;
+
+const USER_QUERY = `
+  query GetUser($id: ID!) {
+    getUser(id: $id) {
+      ${USER_FIELDS}
+    }
+  }
+`;
+
+const CREATE_USER_MUTATION = `
+  mutation CreateUser($firstName: String!, $lastName: String!, $email: String!, $password: String!, $roles: [String!]) {
+    createUser(firstName: $firstName, lastName: $lastName, email: $email, password: $password, roles: $roles) {
+      ${USER_FIELDS}
+    }
+  }
+`;
+
+const UPDATE_USER_MUTATION = `
+  mutation UpdateUser($id: ID!, $firstName: String, $lastName: String, $email: String, $roles: [String!]) {
+    updateUser(id: $id, firstName: $firstName, lastName: $lastName, email: $email, roles: $roles) {
+      ${USER_FIELDS}
+    }
+  }
+`;
+
+const TOGGLE_USER_STATUS_MUTATION = `
+  mutation ToggleUserStatus($id: ID!, $isActive: Boolean!) {
+    toggleUserStatus(id: $id, isActive: $isActive)
+  }
+`;
+
+export const getUsersAPI = async (page = 1, limit = 15): Promise<PagedUserResult> => {
+  const response = await requestGraphQL<UsersQueryResponse, { page: number; pageSize: number }>(
+    USERS_QUERY,
+    { page, pageSize: limit },
+  );
+
+  return unwrapResult(response.getUsers);
 };
 
-export const createUserAPI = async (data: any) => {
-  try {
-    const response = await axiosClient.post(`/api/users`, data);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating user:', error);
-    throw error;
-  }
+export const getUserByIdAPI = async (id: string): Promise<User> => {
+  const response = await requestGraphQL<UsersQueryResponse, { id: string }>(USER_QUERY, { id });
+  return unwrapResult(response.getUser);
 };
 
-export const updateUserAPI = async (id: string, data: any) => {
-  try {
-    const response = await axiosClient.put(`/api/users/${id}`, data);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating user:', error);
-    throw error;
-  }
+export const createUserAPI = async (data: CreateUserDto): Promise<User> => {
+  const response = await requestGraphQL<UsersQueryResponse, CreateUserDto>(CREATE_USER_MUTATION, data);
+  return unwrapResult(response.createUser);
 };
 
-export const toggleUserStatusAPI = async (id: string, isActive: boolean) => {
-  try {
-    const response = await axiosClient.patch(`/api/users/${id}/status`, { isActive });
-    return response.data;
-  } catch (error) {
-    console.error('Error updating user status:', error);
-    throw error;
-  }
+export const updateUserAPI = async (id: string, data: UpdateUserDto): Promise<User> => {
+  const response = await requestGraphQL<UsersQueryResponse, UpdateUserDto & { id: string }>(
+    UPDATE_USER_MUTATION,
+    { id, ...data },
+  );
+  return unwrapResult(response.updateUser);
+};
+
+export const toggleUserStatusAPI = async (id: string, isActive: boolean): Promise<boolean> => {
+  const response = await requestGraphQL<UsersQueryResponse, { id: string; isActive: boolean }>(
+    TOGGLE_USER_STATUS_MUTATION,
+    { id, isActive },
+  );
+
+  return unwrapResult(response.toggleUserStatus);
 };

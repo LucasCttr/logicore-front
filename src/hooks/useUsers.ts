@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getUsersAPI, getUserByIdAPI, createUserAPI, updateUserAPI, toggleUserStatusAPI } from '../api/users';
-import type { User, UserListResponse, CreateUserDto, UpdateUserDto, PagedUserResult } from '../types/users';
+import type { User, CreateUserDto, UpdateUserDto, PagedUserResult } from '../types/users';
 
 interface UserListForUI {
   items: User[];
@@ -14,11 +14,8 @@ export const useUsers = (page: number = 1, limit: number = 15) => {
   return useQuery<UserListForUI>({
     queryKey: ['users', page, limit],
     queryFn: async () => {
-      const response: UserListResponse = await getUsersAPI(page, limit);
-      if (!response.isSuccess || !response.value) {
-        throw new Error('Failed to fetch users');
-      }
-      const { items, total, page: currentPage, pageSize } = response.value;
+      const response: PagedUserResult = await getUsersAPI(page, limit);
+      const { items, total, page: currentPage, pageSize } = response;
       const totalPages = Math.ceil(total / pageSize);
       return {
         items,
@@ -32,7 +29,7 @@ export const useUsers = (page: number = 1, limit: number = 15) => {
 };
 
 export const useUser = (id: string) => {
-  return useQuery<{ data: User }>({
+  return useQuery<User>({
     queryKey: ['user', id],
     queryFn: () => getUserByIdAPI(id),
   });

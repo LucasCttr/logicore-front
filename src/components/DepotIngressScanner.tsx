@@ -3,8 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { PackageForScannerDto } from '../types/scanner';
 import { ShipmentType } from '../types/packages';
-import axiosClient from '../api/axiosClient';
-import { movePackageToDepot } from '../api/packages';
+import { collectPackage, markPackageAsDelivered, movePackageToDepot, getPackageForScannerByTracking } from '../api/packages';
 import { getShipments, addPackageToShipment } from '../api/shipments';
 import type Shipment from '../types/shipments';
 
@@ -87,16 +86,14 @@ export default function DepotIngressScanner() {
         return;
       }
 
-      // Query API
-      const response = await axiosClient.get(`/api/packages/scanner/tracking/${trackingNumber}`);
+      const packageData = await getPackageForScannerByTracking(trackingNumber);
 
-      if (!response.data.isSuccess) {
-        setError(response.data.error || 'Package not found');
+      if (!packageData) {
+        setError('Package not found');
         setInputValue('');
         return;
       }
 
-      const packageData: PackageForScannerDto = response.data.value;
       const newScanned = new Map(scannedPackages);
       newScanned.set(trackingNumber, packageData);
       setScannedPackages(newScanned);
@@ -108,8 +105,8 @@ export default function DepotIngressScanner() {
       setInputValue('');
 
       setTimeout(() => setSuccess(null), 2000);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Error scanning package');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error scanning package');
       setInputValue('');
     }
   };
@@ -193,7 +190,7 @@ export default function DepotIngressScanner() {
       
       // Handle "Collect" action (Pending → InTransit)
       if (action.includes('Collect')) {
-        await axiosClient.post(`/api/packages/${pkg.id}/collect`, {});
+        await collectPackage(pkg.id);
         
         const updatedPackages = new Map(scannedPackages);
         const updatedPkg = { ...pkg, status: 1, statusLabel: 'In Transit' }; // 1 = InTransit
@@ -234,7 +231,7 @@ export default function DepotIngressScanner() {
       } 
       // Handle "Deliver to Customer" (for LastMile shipments in transit)
       else if (action.includes('Deliver to Customer')) {
-        await axiosClient.post(`/api/packages/${pkg.id}/deliver`, {});
+        await markPackageAsDelivered(pkg.id, { deliveryNotes: 'Delivered to customer' });
         
         const updatedPackages = new Map(scannedPackages);
         const updatedPkg = { ...pkg, status: 2, statusLabel: 'Delivered' }; // 2 = Delivered
@@ -246,10 +243,7 @@ export default function DepotIngressScanner() {
       }
       // Handle "Customer Pickup" (from AtDepot for LastMile)
       else if (action.includes('Customer Pickup')) {
-        await axiosClient.post(`/api/packages/${pkg.id}/mark-delivered`, { 
-          packageId: pkg.id,
-          deliveryNotes: 'Picked up at depot' 
-        });
+        await markPackageAsDelivered(pkg.id, { deliveryNotes: 'Picked up at depot' });
         
         const updatedPackages = new Map(scannedPackages);
         const updatedPkg = { ...pkg, status: 2, statusLabel: 'Delivered' }; // 2 = Delivered
@@ -261,8 +255,8 @@ export default function DepotIngressScanner() {
       }
       
       setTimeout(() => setSuccess(null), 2000);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Failed to perform action');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to perform action');
     } finally {
       setIsActionLoading(false);
     }

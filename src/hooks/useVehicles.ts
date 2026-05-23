@@ -8,7 +8,7 @@ export interface VehiclesResponse {
 export function useVehicles() {
   return useQuery<VehiclesResponse, Error>({
     queryKey: ['vehicles'],
-    queryFn: () => getVehicles(),
+    queryFn: async () => ({ items: await getVehicles() }),
     staleTime: 1000 * 60,
   });
 }

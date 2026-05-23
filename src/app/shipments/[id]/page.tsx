@@ -4,11 +4,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AuthGuard from '../../../components/AuthGuard';
 import ShipmentDetailView from '../../../components/ShipmentDetailView';
-import api from '../../../api/axiosClient';
-import { getDriverById } from '../../../api/drivers';
+import { getMyDriverProfile, getDriverById } from '../../../api/drivers';
 import { getLocations } from '../../../api/locations';
-import { getPackageById, markPackageAsDelivered } from '../../../api/packages';
-import { finalizeShipment } from '../../../api/shipments';
+import { getPackageById } from '../../../api/packages';
+import { finalizeShipment, getShipmentById } from '../../../api/shipments';
 import { parseShipmentStatus } from '../../../api/shipmentMappers';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
@@ -38,7 +37,7 @@ interface ShipmentDetails {
     volume: number;
     status: number;
   }>;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface Driver {
@@ -58,19 +57,8 @@ function getRolesFromToken(token: string): string[] {
     if (!roles) return [];
     if (Array.isArray(roles)) return roles;
     return String(roles).split(',').map((s: string) => s.trim());
-  } catch (e) {
+  } catch {
     return [];
-  }
-}
-
-function getUserIdFromToken(token: string): string | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length < 2) return null;
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return payload.sub || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || null;
-  } catch (e) {
-    return null;
   }
 }
 
@@ -85,10 +73,6 @@ export default function ShipmentDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [currentDriverId, setCurrentDriverId] = useState<string | null>(null);
-  const [packages, setPackages] = useState<any[]>([]);
-  const [loadingPackages, setLoadingPackages] = useState(false);
-  const [deliveryError, setDeliveryError] = useState<string | null>(null);
-  const [markingDelivery, setMarkingDelivery] = useState<Set<string>>(new Set());
   const [finalizingShipment, setFinalizingShipment] = useState(false);
   const [locations, setLocations] = useState<LocationDto[]>([]);
 
@@ -97,8 +81,8 @@ export default function ShipmentDetailsPage() {
       try {
         const locs = await getLocations();
         setLocations(Array.isArray(locs) ? locs : []);
-      } catch (err) {
-        console.error('Error loading locations:', err);
+      } catch {
+        console.error('Error loading locations');
       }
     };
 
@@ -109,42 +93,26 @@ export default function ShipmentDetailsPage() {
     const fetchShipment = async () => {
       try {
         setLoading(true);
+        // Get current user role and ID
         const token = localStorage.getItem('token');
         if (!token) {
           router.push('/login');
           return;
         }
 
-        // Get current user role and ID
         const roles = getRolesFromToken(token);
         setCurrentUserRole(roles[0] || null);
         
-        const userId = getUserIdFromToken(token);
-        if (userId && roles.includes('Driver')) {
-          // If user is a driver, get their driver ID
+        if (roles.includes('Driver')) {
           try {
-            const driverData = await getDriverById(userId);
+            const driverData = await getMyDriverProfile();
             setCurrentDriverId(driverData?.id || null);
-          } catch (err) {
-            console.error('Error getting driver ID:', err);
+          } catch {
+            console.error('Error getting driver ID');
           }
         }
 
-        const response = await api.get(`/api/shipments/${shipmentId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        let shipmentData: ShipmentDetails | null = null;
-        if (response.data?.isSuccess) {
-          shipmentData = response.data.value;
-        } else if (response.data?.value) {
-          shipmentData = response.data.value;
-        } else {
-          setError(response.data?.error || 'Failed to load shipment');
-          return;
-        }
+        const shipmentData = await getShipmentById(shipmentId);
 
         // Validate access: Admin can see all, Driver can only see their own
         if (roles.includes('Driver') && !roles.includes('Admin')) {
@@ -167,8 +135,8 @@ export default function ShipmentDetailsPage() {
             // Continue without driver details if error
           }
         }
-      } catch (err: any) {
-        setError(err?.response?.data?.error || 'Error loading shipment');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error loading shipment');
       } finally {
         setLoading(false);
       }
@@ -266,13 +234,12 @@ export default function ShipmentDetailsPage() {
   const handleFinalizeShipment = async () => {
     try {
       setFinalizingShipment(true);
-      setDeliveryError(null);
+      // no-op: the shipment is reloaded below on success
       
       const result = await finalizeShipment(shipmentId);
       if (result) {
         // Refresh shipment with all related data
-        const response = await api.get(`/api/shipments/${shipmentId}`);
-        const updated = response.data?.value ?? response.data;
+        const updated = await (await import('../../../api/shipments')).getShipmentById(shipmentId);
         setShipment(updated);
         
         // Also refetch packages to ensure they're up to date
@@ -287,15 +254,15 @@ export default function ShipmentDetailsPage() {
           } : null);
         }
         
-        setDeliveryError(null);
       } else {
-        setDeliveryError('Failed to finalize shipment');
+        console.error('Failed to finalize shipment');
       }
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.errors
-        ? Object.values(err.response.data.errors).flat().join(', ')
-        : err.message || 'Error finalizing shipment';
-      setDeliveryError(errorMsg);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { errors?: Record<string, string[]> } }; message?: string };
+      const errorMsg = error?.response?.data?.errors
+        ? Object.values(error.response.data.errors).flat().join(', ')
+        : error?.message || 'Error finalizing shipment';
+      console.error(errorMsg);
     } finally {
       setFinalizingShipment(false);
     }

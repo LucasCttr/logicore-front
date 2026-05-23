@@ -282,7 +282,7 @@ export default function PackageList() {
           {items.map((p, idx) => {
             const title = p.trackingNumber ?? "No description";
             const destination =
-              (p as any).recipient?.address ?? p.destination ?? "-";
+              (p as any).recipient?.address ?? p.destinationAddress ?? p.destination ?? "-";
             const recipientName = (p as any).recipient?.name ?? "-";
 
             return (

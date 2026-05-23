@@ -12,6 +12,7 @@
 - [Proximos Pasos](#proximos-pasos)
 
 ## Descripcion
+> ⚠️ Proyecto en migración: API layer migrando de Axios/REST a GraphQL.
 - **Proposito**: Interfaz web moderna para la plataforma LogiCore, como complemento visual del backend. Proyecto de aprendizaje en Next.js con buenas practicas de frontend.
 - **Que hace**: Provee una UI por roles para gestionar conductores, vehiculos, ubicaciones, paquetes y envios, con formularios reactivos, validacion de entradas y consumo de la [LogiCore API](https://github.com/LucasCttr/logicore-back).
   - **Interfaz Admin**: CRUD completo para conductores, vehiculos, ubicaciones, paquetes, envios, usuarios y Dashboard.
@@ -157,6 +158,6 @@ Administracion de usuarios del sistema: roles, activacion y permisos de acceso.
 - **UI basada en estado**: scanner y acciones se adaptan segun estado del paquete y tipo de envio.
 
 ## Proximos Pasos
-- Migrar a GraphQL y redux. (Actualmente en proceso, ver en rama dev)
+- Migrar a GraphQL y redux. 
 - Implementar/Terminar funcionalidades.
 - Agregar tests unitarios (Jest + React Testing Library).

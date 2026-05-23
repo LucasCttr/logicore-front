@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getDriversWithDetails } from '../api/drivers';
-import { DriverDetailsWithUser, DriverDetailsListResponse } from '../types/driverDetails';
+import { DriverDetailsWithUser } from '../types/driverDetails';
 
 export interface DriverDetailsListForUI {
   items: DriverDetailsWithUser[];
@@ -19,13 +19,8 @@ export function useDriversWithDetails(
   return useQuery<DriverDetailsListForUI>({
     queryKey: ['driversWithDetails', page, limit, search, isActive],
     queryFn: async () => {
-      const response: DriverDetailsListResponse = await getDriversWithDetails(page, limit, search, isActive);
-      
-      if (!response.isSuccess || !response.value) {
-        throw new Error('Failed to fetch driver details');
-      }
-
-      const { items, total, page: currentPage, pageSize } = response.value;
+      const response = await getDriversWithDetails(page, limit, search, isActive);
+      const { items, total, page: currentPage, pageSize } = response;
       const totalPages = Math.ceil(total / pageSize);
 
       return {

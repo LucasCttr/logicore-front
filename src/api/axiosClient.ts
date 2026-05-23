@@ -39,6 +39,16 @@ api.interceptors.response.use(
     // Add user-friendly message to all errors
     error.userMessage = getErrorMessage(error);
     
+    // If server responds 403 -> treat as forbidden and clear auth
+    if (error.response?.status === 403) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      return Promise.reject(error);
+    }
+
     // Only attempt refresh if we have a 401 and haven't already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Check if this is a /refresh request that failed (actual auth failure)

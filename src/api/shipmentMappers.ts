@@ -1,5 +1,26 @@
 import type { Shipment } from '../types/shipments';
 
+type BackendShipmentLike = {
+  id?: string;
+  routeCode?: string | null;
+  vehicleId?: string | null;
+  driverId?: string | null;
+  createdAt?: string | null;
+  estimatedDelivery?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+  arrivedAt?: string | null;
+  vehicleMaxWeightCapacity?: number | { parsedValue?: number } | null;
+  vehicleMaxVolumeCapacity?: number | { parsedValue?: number } | null;
+  packageIds?: string[] | null;
+  destinationLocationId?: number | null;
+  destinationLocationName?: string | null;
+  originLocationName?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  status?: unknown;
+};
+
 /** Matches `LogiCore.Domain.Entities.ShipmentStatus` (int or JSON string enum). */
 const SHIPMENT_STATUS_BY_NAME: Record<string, number> = {
   draft: 0,
@@ -31,32 +52,31 @@ export function parseShipmentStatus(value: unknown): number {
  * Normalizes backend shipment response to frontend format
  * Handles property naming differences and adds missing fields
  */
-export function normalizeShipment(backendShipment: any): Shipment {
+export function normalizeShipment(backendShipment: BackendShipmentLike): Shipment {
   return {
-    id: backendShipment.id,
-    routeCode: backendShipment.routeCode,
-    vehicleId: backendShipment.vehicleId,
-    driverId: backendShipment.driverId,
-    createdAt: backendShipment.createdAt,
-    estimatedDelivery: backendShipment.estimatedDelivery,
-    shippedAt: backendShipment.shippedAt,
-    deliveredAt: backendShipment.deliveredAt,
-    arrivedAt: backendShipment.arrivedAt,
-    vehicleMaxWeightCapacity: backendShipment.vehicleMaxWeightCapacity?.parsedValue ?? 
-                              backendShipment.vehicleMaxWeightCapacity,
-    vehicleMaxVolumeCapacity: backendShipment.vehicleMaxVolumeCapacity?.parsedValue ?? 
-                              backendShipment.vehicleMaxVolumeCapacity,
-    packageIds: backendShipment.packageIds,
-    destinationLocationId: backendShipment.destinationLocationId,
+    id: backendShipment.id ?? '',
+    routeCode: backendShipment.routeCode ?? null,
+    vehicleId: backendShipment.vehicleId ?? null,
+    driverId: backendShipment.driverId ?? null,
+    createdAt: backendShipment.createdAt ?? null,
+    estimatedDelivery: backendShipment.estimatedDelivery ?? null,
+    shippedAt: backendShipment.shippedAt ?? null,
+    deliveredAt: backendShipment.deliveredAt ?? null,
+    arrivedAt: backendShipment.arrivedAt ?? null,
+    vehicleMaxWeightCapacity: typeof backendShipment.vehicleMaxWeightCapacity === 'object'
+      ? backendShipment.vehicleMaxWeightCapacity?.parsedValue ?? null
+      : backendShipment.vehicleMaxWeightCapacity ?? null,
+    vehicleMaxVolumeCapacity: typeof backendShipment.vehicleMaxVolumeCapacity === 'object'
+      ? backendShipment.vehicleMaxVolumeCapacity?.parsedValue ?? null
+      : backendShipment.vehicleMaxVolumeCapacity ?? null,
+    packageIds: backendShipment.packageIds ?? null,
+    destinationLocationId: backendShipment.destinationLocationId ?? null,
     status: parseShipmentStatus(backendShipment.status),
-    // Additional computed fields for frontend
-    ...(backendShipment.destinationLocationId && {
-      destination: 'Loading destination...'
-    }),
-    origin: 'Depot', // For first-time transport to depot
+    origin: backendShipment.originLocationName ?? backendShipment.origin ?? null,
+    destination: backendShipment.destinationLocationName ?? backendShipment.destination ?? null,
   };
 }
 
-export function normalizeShipments(backendShipments: any[]): Shipment[] {
+export function normalizeShipments(backendShipments: BackendShipmentLike[]): Shipment[] {
   return backendShipments.map(normalizeShipment);
 }

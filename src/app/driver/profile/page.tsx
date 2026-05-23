@@ -3,17 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useRouter } from 'next/navigation';
-import api from '../../../api/axiosClient';
+import { getMyDriverProfile } from '../../../api/drivers';
 
 interface DriverProfile {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   licenseNumber: string;
-  licenseType: string;
-  licenseExpiry: string;
-  insuranceExpiry: string;
   phone?: string;
   assignedVehicle?: {
     id: string;
@@ -32,25 +28,23 @@ export default function DriverProfilePage() {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        if (!token) {
-          router.push('/login');
-          return;
-        }
-
-        const response = await api.get('/api/drivers/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const profileData = await getMyDriverProfile();
+        setProfile({
+          id: profileData.id,
+          name: profileData.name,
+          email: profileData.email ?? '',
+          licenseNumber: profileData.licenseNumber ?? '',
+          phone: profileData.phone ?? undefined,
+          assignedVehicle: profileData.assignedVehicle
+            ? {
+                id: profileData.assignedVehicle.id,
+                licensePlate: profileData.assignedVehicle.licensePlate ?? '',
+                model: profileData.assignedVehicle.model ?? '',
+              }
+            : undefined,
         });
-
-        if (response.data?.isSuccess) {
-          setProfile(response.data.value);
-        } else {
-          setError(response.data?.error || 'Failed to load profile');
-        }
-      } catch (err: any) {
-        setError(err?.response?.data?.error || 'Error loading profile');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error loading profile');
       } finally {
         setLoading(false);
       }
@@ -58,21 +52,6 @@ export default function DriverProfilePage() {
 
     fetchProfile();
   }, [router]);
-
-  const formatDate = (date: string) => {
-    try {
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    } catch {
-      return date;
-    }
-  };
-
-  const isLicenseExpired = profile?.licenseExpiry ? new Date(profile.licenseExpiry) < new Date() : false;
-  const isInsuranceExpired = profile?.insuranceExpiry ? new Date(profile.insuranceExpiry) < new Date() : false;
 
   return (
     <AuthGuard requireRoles="Driver">
@@ -97,12 +76,8 @@ export default function DriverProfilePage() {
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Personal Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">First Name</label>
-                  <p className="text-lg text-gray-900 mt-1">{profile.firstName}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Last Name</label>
-                  <p className="text-lg text-gray-900 mt-1">{profile.lastName}</p>
+                  <label className="text-sm font-medium text-gray-600">Name</label>
+                  <p className="text-lg text-gray-900 mt-1">{profile.name}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Email</label>
@@ -124,32 +99,6 @@ export default function DriverProfilePage() {
                 <div>
                   <label className="text-sm font-medium text-gray-600">License Number</label>
                   <p className="text-lg font-mono text-gray-900 mt-1">{profile.licenseNumber}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">License Type</label>
-                  <p className="text-lg text-gray-900 mt-1">{profile.licenseType}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">License Expiry</label>
-                  <div className="mt-1">
-                    <p className={`text-lg ${isLicenseExpired ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
-                      {formatDate(profile.licenseExpiry)}
-                    </p>
-                    {isLicenseExpired && (
-                      <p className="text-sm text-red-600 mt-1">⚠️ License has expired</p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Insurance Expiry</label>
-                  <div className="mt-1">
-                    <p className={`text-lg ${isInsuranceExpired ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
-                      {formatDate(profile.insuranceExpiry)}
-                    </p>
-                    {isInsuranceExpired && (
-                      <p className="text-sm text-red-600 mt-1">⚠️ Insurance has expired</p>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>

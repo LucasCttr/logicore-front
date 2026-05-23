@@ -1,25 +1,20 @@
-import api from './axiosClient';
+import {
+  startShipment as startShipmentMutation,
+  arriveShipment as arriveShipmentMutation,
+  completeShipment as completeShipmentMutation,
+  dispatchShipment as dispatchShipmentMutation,
+} from './shipments';
 
 /**
  * Driver starts a shipment (marks as active/Dispatched)
  * Only Draft shipments can be started
  * Driver can have only one active shipment at a time
  */
-export async function startShipment(shipmentId: string): Promise<any> {
+export async function startShipment(shipmentId: string): Promise<{ isSuccess: boolean; error?: string }> {
   try {
-    const res = await api.post(`/api/shipments/${shipmentId}/start`, {});
-    if (res.data?.isSuccess === false) {
-      return { isSuccess: false, error: res.data?.error || 'Failed to start shipment' };
-    }
-    return res.data || { isSuccess: true };
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.errors 
-      ? Object.values(error.response.data.errors).flat().join(', ')
-      : error.response?.data?.error 
-      ? error.response.data.error
-      : error.message || 'Failed to start shipment';
-    
-    return { isSuccess: false, error: errorMessage };
+    return { isSuccess: await startShipmentMutation(shipmentId) };
+  } catch (error) {
+    return { isSuccess: false, error: error instanceof Error ? error.message : 'Failed to start shipment' };
   }
 }
 
@@ -28,21 +23,11 @@ export async function startShipment(shipmentId: string): Promise<any> {
  * All InTransit packages transition to AtDepot
  * Pending packages remain Pending (not collected)
  */
-export async function arriveShipment(shipmentId: string): Promise<any> {
+export async function arriveShipment(shipmentId: string): Promise<{ isSuccess: boolean; error?: string }> {
   try {
-    const res = await api.post(`/api/shipments/${shipmentId}/arrive`, {});
-    if (res.data?.isSuccess === false) {
-      return { isSuccess: false, error: res.data?.error || 'Failed to mark shipment as arrived' };
-    }
-    return res.data || { isSuccess: true };
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.errors 
-      ? Object.values(error.response.data.errors).flat().join(', ')
-      : error.response?.data?.error 
-      ? error.response.data.error
-      : error.message || 'Failed to mark shipment as arrived';
-    
-    return { isSuccess: false, error: errorMessage };
+    return { isSuccess: await arriveShipmentMutation(shipmentId) };
+  } catch (error) {
+    return { isSuccess: false, error: error instanceof Error ? error.message : 'Failed to mark shipment as arrived' };
   }
 }
 
@@ -50,21 +35,11 @@ export async function arriveShipment(shipmentId: string): Promise<any> {
  * Driver completes shipment delivery
  * Marks shipment as Delivered
  */
-export async function completeShipment(shipmentId: string): Promise<any> {
+export async function completeShipment(shipmentId: string): Promise<{ isSuccess: boolean; error?: string }> {
   try {
-    const res = await api.post(`/api/shipments/${shipmentId}/complete`, {});
-    if (res.data?.isSuccess === false) {
-      return { isSuccess: false, error: res.data?.error || 'Failed to complete shipment' };
-    }
-    return res.data || { isSuccess: true };
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.errors 
-      ? Object.values(error.response.data.errors).flat().join(', ')
-      : error.response?.data?.error 
-      ? error.response.data.error
-      : error.message || 'Failed to complete shipment';
-    
-    return { isSuccess: false, error: errorMessage };
+    return { isSuccess: await completeShipmentMutation(shipmentId) };
+  } catch (error) {
+    return { isSuccess: false, error: error instanceof Error ? error.message : 'Failed to complete shipment' };
   }
 }
 
@@ -72,20 +47,10 @@ export async function completeShipment(shipmentId: string): Promise<any> {
  * Admin dispatches shipment (Draft → Dispatched)
  * All assigned packages transition to InTransit
  */
-export async function dispatchShipment(shipmentId: string): Promise<any> {
+export async function dispatchShipment(shipmentId: string): Promise<{ isSuccess: boolean; error?: string }> {
   try {
-    const res = await api.post(`/api/shipments/${shipmentId}/dispatch`, {});
-    if (res.data?.isSuccess === false) {
-      return { isSuccess: false, error: res.data?.error || 'Failed to dispatch shipment' };
-    }
-    return res.data || { isSuccess: true };
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.errors 
-      ? Object.values(error.response.data.errors).flat().join(', ')
-      : error.response?.data?.error 
-      ? error.response.data.error
-      : error.message || 'Failed to dispatch shipment';
-    
-    return { isSuccess: false, error: errorMessage };
+    return { isSuccess: await dispatchShipmentMutation(shipmentId) };
+  } catch (error) {
+    return { isSuccess: false, error: error instanceof Error ? error.message : 'Failed to dispatch shipment' };
   }
 }
