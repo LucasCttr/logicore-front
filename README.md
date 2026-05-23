@@ -157,7 +157,6 @@ Administracion de usuarios del sistema: roles, activacion y permisos de acceso.
 - **UI basada en estado**: scanner y acciones se adaptan segun estado del paquete y tipo de envio.
 
 ## Proximos Pasos
+- Migrar a GraphQL y redux. (Actualmente en proceso, ver en rama dev)
 - Implementar/Terminar funcionalidades.
 - Agregar tests unitarios (Jest + React Testing Library).
-- Arreglar bugs.
-
