@@ -12,13 +12,13 @@
 - [Proximos Pasos](#proximos-pasos)
 
 ## Descripcion
-> ⚠️ Proyecto en migración: API layer migrando de Axios/REST a GraphQL.
+> ⚠️ Proyecto con capa de API basada en GraphQL, con autenticación y refresh de sesión integrados.
 - **Proposito**: Interfaz web moderna para la plataforma LogiCore, como complemento visual del backend. Proyecto de aprendizaje en Next.js con buenas practicas de frontend.
-- **Que hace**: Provee una UI por roles para gestionar conductores, vehiculos, ubicaciones, paquetes y envios, con formularios reactivos, validacion de entradas y consumo de la [LogiCore API](https://github.com/LucasCttr/logicore-back).
-  - **Interfaz Admin**: CRUD completo para conductores, vehiculos, ubicaciones, paquetes, envios, usuarios y Dashboard.
-  - **Interfaz Driver**: Scanner, vista de mis envios y gestion de perfil/licencia adaptadas para version mobile.
+- **Que hace**: Provee una UI por roles para gestionar conductores, vehiculos, ubicaciones, paquetes y envios, con formularios reactivos, validacion de entradas y consumo de la [LogiCore API](https://github.com/LucasCttr/logicore-back) a traves de GraphQL.
+  - **Interfaz Admin**: CRUD completo para conductores, vehiculos, ubicaciones, paquetes, envios, usuarios y dashboard.
+  - **Interfaz Driver**: scanner, vista de mis envios y gestion de perfil/licencia adaptadas para version mobile.
   - **Scanner de Paquetes**: Flujo basado en codigo de barras con acciones segun estado (recolectar, dejar en deposito, entregar).
-- **Backend**: [.NET API: https://github.com/LucasCttr/logicore-back]
+- **Backend**: [.NET API con GraphQL: https://github.com/LucasCttr/logicore-back]
 
 ## Arquitectura
 - **Patron**: Modular basado en componentes, separando responsabilidades en `components`, `hooks`, `api`, `app` y `types`.
@@ -26,16 +26,16 @@
   - `app/`: Rutas de Next.js (App Router) y layouts.
   - `components/`: Componentes reutilizables (formularios, listas, filtros, modales).
   - `hooks/`: Hooks custom para logica de datos y estado.
-  - `api/`: Cliente HTTP y servicios para consumir el backend.
+  - `api/`: Cliente GraphQL, autenticacion y servicios por dominio para consumir el backend.
   - `schemas/`: Validaciones con Zod.
   - `types/`: Tipos compartidos de TypeScript.
 
 ## Stack Tecnologico
 - **Lenguaje**: `TypeScript`
-- **Framework**: `Next.js 15+` (App Router)
+- **Framework**: `Next.js 16.2.1` (App Router)
 - **Estilos**: `Tailwind CSS`
 - **Validacion**: `Zod` + `React Hook Form`
-- **Cliente HTTP**: `Axios`
+- **Cliente de datos**: `GraphQL` con apoyo de `Axios` para refresh de sesion
 - **Estado**: `React Hooks` (useState, useContext)
 - **Linting**: `ESLint`
 
@@ -43,7 +43,8 @@
 - **Next.js**: Framework React con SSR, SSG, rutas y optimizaciones automaticas.
 - **Tailwind CSS**: Framework utilitario para estilado rapido y consistente.
 - **TypeScript**: Tipado estatico y mejor DX.
-- **Axios**: Cliente HTTP con interceptores para autorizacion y manejo de errores.
+- **GraphQL**: Capa principal de consumo de datos del backend con tipado y queries por dominio.
+- **Axios**: Soporte para refresh de sesion y manejo de autorizacion cuando hace falta.
 - **React Hook Form**: Manejo eficiente de formularios reactivos.
 - **Zod**: Validacion de esquemas en compilacion y runtime.
 - **ESLint**: Analisis estatico de codigo para mantener calidad y consistencia.
@@ -57,7 +58,7 @@
   - `AuthGuard.tsx`: Proteccion de rutas por rol (Admin / Driver).
   - `SectionHeader.tsx`: Titulos dinamicos segun la ruta.
 - **src/hooks/**: Hooks custom para consultar datos, manejar estado local y validar logica.
-- **src/api/**: Configuracion de Axios y servicios por endpoint (drivers, vehicles, locations, packages, shipments).
+- **src/api/**: Servicios GraphQL por dominio (drivers, vehicles, locations, packages, shipments, users y auth).
 - **src/schemas/**: Esquemas Zod para validacion de formularios e inputs.
 - **src/types/**: Tipos compartidos para DTOs y modelo de dominio.
   - `scanner.ts`: Tipo `PackageForScannerDto`.
@@ -66,7 +67,7 @@
 ## Patrones Implementados
 - **Custom Hooks Pattern**: encapsulacion de fetching, estado y errores en hooks reutilizables.
 - **Component Composition**: composicion de componentes base (Form, List, Filter, Modal) para vistas especificas.
-- **API Client Pattern**: centralizacion del cliente HTTP en `api/axiosClient.ts` con interceptores.
+- **API Client Pattern**: centralizacion del cliente GraphQL en `api/graphqlClient.ts` y soporte auxiliar de `api/axiosClient.ts` para refresh de sesion.
 - **Schema Validation Pattern**: validaciones declarativas con Zod, integradas con React Hook Form.
 - **Role-Based Routing**: parseo de JWT para extraer roles y proteger rutas con `AuthGuard`.
 - **Context API**: estado global opcional para autenticacion/tema segun providers disponibles.
@@ -80,75 +81,103 @@
   - AtDepot -> Customer Pickup (solo LastMile)
 
 ## Vistas de la Aplicacion
-A continuacion se muestran las vistas principales del frontend con una breve descripcion funcional.
+Las siguientes capturas muestran las vistas principales del frontend, agrupadas por flujo para una lectura mas limpia.
 
-### Dashboard de Admin
-![Dashboard de Admin](./assets/AdminDashboard.psd.png)
-Vista principal para administradores con resumen operativo, accesos directos de gestion y monitoreo general de la operacion logistica.
+### 1. Operacion de Administracion
+Vistas centralizadas para supervisar el sistema y gestionar la operacion diaria.
 
-### Dashboard mobile de Driver
-![Dashboard de Driver](./assets/DriverDashboard.psd.png)
+- **Dashboard de admin**: resumen operativo de alto nivel y accesos rapidos a las acciones principales.
+- **Envios**: listado y administracion de envios, estados y asignaciones.
+- **Paquetes**: revision del ciclo de vida, filtros y acciones segun estado.
 
-Vista inicial para el conductor con accesos rapidos a sus tareas del dia, metricas basicas y navegacion operativa.
+![Dashboard de admin](./assets/AdminDashboard.psd.png)
+*Panel principal para administradores con resumen operativo y monitoreo general.*
 
-### Gestion de Envios
-![Shipments](./assets/Shipments.psd.png)
-Administra envios con estados, asignaciones y seguimiento de progreso general.
+![Envios](./assets/Shipments.psd.png)
+*Vista de gestion de envios con seguimiento de estados y control operativo.*
 
-### Detalle de envios
+![Paquetes](./assets/Packages.psd.png)
+*Vista de gestion de paquetes con busqueda, filtros y acciones del ciclo logistico.*
+
+---
+
+### 2. Flujo de Envios
+Pantallas paso a paso para crear y revisar envios.
+
+- **Crear envio - paso 1**: datos base, tipo de envio y parametros principales.
+- **Crear envio - paso 2**: asociar paquetes y validar detalles operativos.
+- **Crear envio - paso 3**: confirmacion final antes de crear el envio.
+- **Detalle de envio**: linea de tiempo, destino, chofer y paquetes transportados.
+
+![Crear envio - paso 1](./assets/CreateShipment1.psd.png)
+*Primer paso del flujo de creacion de envios.*
+
+![Crear envio - paso 2](./assets/CreateShipment2.psd.png)
+*Segundo paso para asociar paquetes y definir el envio.*
+
+![Crear envio - paso 3](./assets/CreateShipment3.psd.png)
+*Paso final de revision y confirmacion antes de guardar el envio.*
+
 ![Detalle de envio](./assets/DriverShipmentView.psd.png)
-Muestra informacion de envios: tipo, destino, ubicacion, cambio de estados, chofer, paquetes transportados.
+*Vista detallada del envio con historial, destino y chofer asignado.*
 
-### Vista Mobile de envios
-![Vista Mobile](./assets/PhoneView.psd.png)
-Diseño adaptado a celular, muestra solo los envios asignados al chofer logeado en el sistema.
+---
 
-### Gestion de Paquetes
-![Packages](./assets/Packages.psd.png)
-Vista de paquetes con busqueda, filtros y acciones segun ciclo logistico.
+### 3. Experiencia del Conductor
+Pantallas orientadas al uso mobile para el rol de conductor.
 
-### Detalle de Paquete
-![Detalle de Paquete](./assets/PackageInfo.psd.png)
-Muestra informacion completa del paquete, su trazabilidad y datos asociados al envio.
+- **Dashboard del conductor**: acceso rapido a tareas asignadas y actividad del dia.
+- **Vista de envios del conductor**: listado mobile-friendly de los envios asignados al conductor autenticado.
+- **Perfil del conductor**: gestion de perfil y licencia.
+- **Detalle del conductor**: consulta de informacion personal, licencia y estado operativo.
 
-### Crear Envio - Paso 1
-![Create Shipment 1](./assets/CreateShipment1.psd.png)
-Primer paso del alta de envio: datos base, tipo de envio y parametros principales.
+![Dashboard del conductor](./assets/DriverDashboard.psd.png)
+*Dashboard mobile para conductores con accesos rapidos y navegacion operativa.*
 
-### Crear Envio - Paso 2
-![Create Shipment 2](./assets/CreateShipment2.psd.png)
-Segundo paso para asociar paquetes, validar informacion y definir detalles operativos.
+![Vista de envios del conductor](./assets/PhoneView.psd.png)
+*Vista responsive de envios para el conductor autenticado en celular.*
 
-### Crear Envio - Paso 3
-![Create Shipment 3](./assets/CreateShipment3.psd.png)
-Paso final de confirmacion y revision antes de crear el envio.
+![Perfil del conductor](./assets/DriverDetails.psd.png)
+*Pantalla de detalle del conductor con informacion personal, licencia y estado operativo para revisar rapidamente su perfil.*
 
-### Scanner
+---
+
+### 4. Scanner y Acciones de Campo
+Pantallas operativas para gestionar paquetes mediante codigo de barras.
+
+- **Scanner**: escaneo de paquetes para recolectar, mover a deposito o entregar segun el estado.
+
 ![Scanner](./assets/Scanner.psd.png)
-Flujo de escaneo de codigos para registrar recoleccion, ingreso a deposito y entrega, aplicando reglas por estado.
+*Flujo de escaneo para recoleccion, ingreso a deposito y acciones de entrega.*
 
-### Gestion de Conductores
-![Drivers](./assets/Drivers.psd.png)
-Listado y administracion de conductores: consulta, filtros, alta, edicion y control de disponibilidad.
+---
 
-### Gestion de Vehiculos
-![Vehicles](./assets/Vehicles.psd.png)
-Pantalla para administrar la flota, asignaciones y estado operativo de los vehiculos.
+### 5. Gestion de Datos Maestros
+Pantallas administrativas para entidades de catalogo y control de acceso.
 
-### Gestion de Ubicaciones
-![Locations](./assets/Locations.psd.png)
-Permite crear y administrar sucursales/depositos con su informacion operativa.
+- **Conductores**: administracion de registros y disponibilidad.
+- **Vehiculos**: gestion de la flota y su estado operativo.
+- **Ubicaciones**: creacion y mantenimiento de sucursales y depositos.
+- **Usuarios**: gestion de usuarios, roles y permisos de acceso.
 
-### Gestion de Usuarios
-![Users](./assets/Users.psd.png)
-Administracion de usuarios del sistema: roles, activacion y permisos de acceso.
+![Conductores](./assets/Drivers.psd.png)
+*Listado y gestion de conductores con busqueda, filtros y control de disponibilidad.*
+
+![Vehiculos](./assets/Vehicles.psd.png)
+*Pantalla de gestion de flota para asignar y mantener vehiculos.*
+
+![Ubicaciones](./assets/Locations.psd.png)
+*Vista administrativa para sucursales y depositos.*
+
+![Usuarios](./assets/Users.psd.png)
+*Pantalla de administracion de usuarios con roles y activacion.*
 
 ## Buenas Practicas y Convenciones Aplicadas
 - **Separacion de responsabilidades**: componentes (presentacion), hooks (logica), api (comunicacion).
 - **Componentes reutilizables**: listas, formularios, filtros y modales genericos para evitar duplicacion.
 - **Hooks custom**: encapsulan logica de datos y estado (por ejemplo `useDrivers`, `useVehicles`, `usePackages`).
 - **Validacion en capas**: Zod para esquemas y React Hook Form para UX reactiva.
-- **Cliente API tipado**: Axios configurado con tipos TypeScript para mayor seguridad.
+- **Cliente API tipado**: queries y mutaciones GraphQL tipadas con TypeScript para mayor seguridad.
 - **Autenticacion**: interceptores HTTP para manejar JWT; parseo de token para extraer roles.
 - **Control de acceso por rol**: AuthGuard protege rutas segun roles Admin/Driver.
 - **Diseno responsive**: Tailwind con breakpoints para multiples tamanos de pantalla.
@@ -158,6 +187,6 @@ Administracion de usuarios del sistema: roles, activacion y permisos de acceso.
 - **UI basada en estado**: scanner y acciones se adaptan segun estado del paquete y tipo de envio.
 
 ## Proximos Pasos
-- Migrar a GraphQL y redux. 
+- Consolidar el estado global solo si la complejidad del flujo lo requiere.
 - Implementar/Terminar funcionalidades.
 - Agregar tests unitarios (Jest + React Testing Library).
