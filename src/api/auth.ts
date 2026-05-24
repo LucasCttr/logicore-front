@@ -1,6 +1,6 @@
 import type UserDto from '../types/auth';
 import type { AuthResponseDto, LoginUserDto, RegisterUserDto } from '../types/auth';
-import { getStoredRefreshToken, requestGraphQL, unwrapResult } from './graphqlClient';
+import { requestGraphQL, unwrapResult } from './graphqlClient';
 
 type AuthMutationResponse = {
   register?: UserDto;
@@ -43,7 +43,6 @@ const LOGIN_MUTATION = `
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password) {
       token
-      refreshToken
       user {
         ${AUTH_USER_FIELDS}
       }
@@ -77,19 +76,18 @@ export async function login(payload: LoginUserDto): Promise<AuthResponseDto> {
 }
 
 export async function refresh(): Promise<AuthResponseDto> {
-  const response = await requestGraphQL<AuthMutationResponse, { refreshToken: string | null }>(
+  const response = await requestGraphQL<AuthMutationResponse>(
     `
-      mutation Refresh($refreshToken: String) {
-        refresh(refreshToken: $refreshToken) {
+      mutation Refresh {
+        refresh {
           token
-          refreshToken
           user {
             ${AUTH_USER_FIELDS}
           }
         }
       }
     `,
-    { refreshToken: getStoredRefreshToken() },
+    undefined,
     { authenticated: false },
   );
 

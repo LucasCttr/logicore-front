@@ -26,7 +26,6 @@ export type LoginUserDto = {
 export type AuthResponseDto = {
   token: string;
   user: UserDto;
-  refreshToken?: string | null;
 };
 
 export default UserDto;

@@ -16,7 +16,6 @@ type GraphQLClientOptions = {
 
 type AuthResponseLike = {
   token?: string | null;
-  refreshToken?: string | null;
   user?: {
     [key: string]: unknown;
   } | null;
@@ -26,10 +25,9 @@ const defaultApiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5074
 const graphQLEndpoint = process.env.NEXT_PUBLIC_GRAPHQL_URL || `${defaultApiBase.replace(/\/$/, '')}/graphql`;
 
 const REFRESH_MUTATION = `
-  mutation Refresh($refreshToken: String) {
-    refresh(refreshToken: $refreshToken) {
+  mutation Refresh {
+    refresh {
       token
-      refreshToken
       user {
         id
         email
@@ -51,11 +49,6 @@ function getAuthToken(): string | null {
   return localStorage.getItem('token');
 }
 
-export function getStoredRefreshToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('refreshToken');
-}
-
 function storeAuthToken(token: string | null): void {
   if (typeof window === 'undefined') return;
   if (token) {
@@ -68,7 +61,6 @@ function storeAuthToken(token: string | null): void {
 function clearAuth(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
 }
 
@@ -177,17 +169,10 @@ async function refreshAccessToken(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
-    const data = await performRequest<{ refresh: AuthResponseLike } , { refreshToken: string | null }>(
-      REFRESH_MUTATION,
-      { refreshToken: getStoredRefreshToken() },
-      { authenticated: false },
-    );
+    const data = await performRequest<{ refresh: AuthResponseLike }>(REFRESH_MUTATION, undefined, { authenticated: false });
 
     const token = data.refresh?.token ?? null;
     if (token) storeAuthToken(token);
-    if (typeof window !== 'undefined' && data.refresh?.refreshToken) {
-      localStorage.setItem('refreshToken', data.refresh.refreshToken);
-    }
     if (typeof window !== 'undefined' && data.refresh?.user) {
       localStorage.setItem('user', JSON.stringify(normalizeUser(data.refresh.user)));
     }
