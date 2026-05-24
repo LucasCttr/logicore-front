@@ -3,7 +3,7 @@ import type { CreateLocationDto } from '../types/locations';
 import { requestGraphQL, unwrapResult } from './graphqlClient';
 
 type LocationsQueryResponse = {
-  getLocations?: LocationDto[];
+  locations?: LocationDto[];
   createLocation?: LocationDto;
 };
 
@@ -21,7 +21,7 @@ const LOCATION_FIELDS = `
 
 const LOCATIONS_QUERY = `
   query GetLocations {
-    getLocations {
+    locations {
       ${LOCATION_FIELDS}
     }
   }
@@ -37,7 +37,7 @@ const CREATE_LOCATION_MUTATION = `
 
 export async function getLocations(): Promise<LocationDto[]> {
   const response = await requestGraphQL<LocationsQueryResponse>(LOCATIONS_QUERY);
-  return unwrapResult(response.getLocations ?? []);
+  return unwrapResult(response.locations ?? []);
 }
 
 export async function createLocation(payload: CreateLocationDto): Promise<LocationDto> {

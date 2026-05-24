@@ -22,16 +22,16 @@ type DriverDetailsWithUser = {
 };
 
 type DriversQueryResponse = {
-  getDrivers?: Driver[];
-  getDriver?: Driver | null;
-  getAvailableDrivers?: Driver[];
-  getDriverDetails?: {
+  drivers?: Driver[];
+  driver?: Driver | null;
+  availableDrivers?: Driver[];
+  driverDetails?: {
     items: DriverDetailsWithUser[];
     total: number;
     page: number;
     pageSize: number;
   };
-  getMyDriverProfile?: Driver | null;
+  myDriverProfile?: Driver | null;
   registerDriver?: Driver;
   updateDriver?: Driver;
   updateDriverStatus?: Driver;
@@ -54,29 +54,9 @@ const DRIVER_FIELDS = `
   }
 `;
 
-const DRIVER_DETAILS_FIELDS = `
-  id
-  userId
-  driverId
-  firstName
-  lastName
-  email
-  isUserActive
-  licenseNumber
-  licenseType
-  licenseExpiry
-  insuranceExpiry
-  assignedVehicleId
-  assignedVehiclePlate
-  assignedVehicleMake
-  assignedVehicleModel
-  createdAt
-  updatedAt
-`;
-
 const GET_DRIVERS_QUERY = `
   query GetDrivers {
-    getDrivers {
+    drivers {
       ${DRIVER_FIELDS}
     }
   }
@@ -84,7 +64,7 @@ const GET_DRIVERS_QUERY = `
 
 const GET_DRIVER_QUERY = `
   query GetDriver($id: ID!) {
-    getDriver(id: $id) {
+    driver(id: $id) {
       ${DRIVER_FIELDS}
     }
   }
@@ -92,7 +72,7 @@ const GET_DRIVER_QUERY = `
 
 const GET_AVAILABLE_DRIVERS_QUERY = `
   query GetAvailableDrivers {
-    getAvailableDrivers {
+    availableDrivers {
       ${DRIVER_FIELDS}
     }
   }
@@ -100,9 +80,25 @@ const GET_AVAILABLE_DRIVERS_QUERY = `
 
 const GET_DRIVER_DETAILS_QUERY = `
   query GetDriverDetails($page: Int!, $pageSize: Int!, $search: String, $isActive: Boolean) {
-    getDriverDetails(page: $page, pageSize: $pageSize, search: $search, isActive: $isActive) {
+    driverDetails(page: $page, pageSize: $pageSize, search: $search, isActive: $isActive) {
       items {
-        ${DRIVER_DETAILS_FIELDS}
+        id
+        userId
+        driverId
+        firstName
+        lastName
+        email
+        isUserActive
+        licenseNumber
+        licenseType
+        licenseExpiry
+        insuranceExpiry
+        assignedVehicleId
+        assignedVehiclePlate
+        assignedVehicleMake
+        assignedVehicleModel
+        createdAt
+        updatedAt
       }
       total
       page
@@ -113,7 +109,7 @@ const GET_DRIVER_DETAILS_QUERY = `
 
 const GET_MY_DRIVER_PROFILE_QUERY = `
   query GetMyDriverProfile {
-    getMyDriverProfile {
+    myDriverProfile {
       ${DRIVER_FIELDS}
       assignedVehicle {
         id
@@ -159,17 +155,17 @@ const UPDATE_DRIVER_MUTATION = `
 
 export async function getDrivers(): Promise<Driver[]> {
   const response = await requestGraphQL<DriversQueryResponse>(GET_DRIVERS_QUERY);
-  return unwrapResult(response.getDrivers ?? []);
+  return unwrapResult(response.drivers ?? []);
 }
 
 export async function getDriverById(id: string): Promise<Driver> {
   const response = await requestGraphQL<DriversQueryResponse, { id: string }>(GET_DRIVER_QUERY, { id });
-  return unwrapResult(response.getDriver);
+  return unwrapResult(response.driver);
 }
 
 export async function getAvailableDrivers(): Promise<Driver[]> {
   const response = await requestGraphQL<DriversQueryResponse>(GET_AVAILABLE_DRIVERS_QUERY);
-  return unwrapResult(response.getAvailableDrivers ?? []);
+  return unwrapResult(response.availableDrivers ?? []);
 }
 
 export async function getDriversWithDetails(
@@ -183,12 +179,12 @@ export async function getDriversWithDetails(
     { page, pageSize, search, isActive },
   );
 
-  return unwrapResult(response.getDriverDetails);
+  return unwrapResult(response.driverDetails);
 }
 
 export async function getMyDriverProfile(): Promise<Driver> {
   const response = await requestGraphQL<DriversQueryResponse>(GET_MY_DRIVER_PROFILE_QUERY);
-  return unwrapResult(response.getMyDriverProfile);
+  return unwrapResult(response.myDriverProfile);
 }
 
 export async function registerDriver(payload: RegisterDriverDto): Promise<Driver> {

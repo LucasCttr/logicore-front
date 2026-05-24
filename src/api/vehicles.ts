@@ -28,9 +28,9 @@ export type UpdateVehicleRequest = {
 };
 
 type VehiclesQueryResponse = {
-  getVehicles?: Vehicle[];
-  getVehicle?: Vehicle | null;
-  getAvailableVehicles?: Vehicle[];
+  vehicles?: Vehicle[];
+  vehicle?: Vehicle | null;
+  availableVehicles?: Vehicle[];
   createVehicle?: Vehicle;
   updateVehicle?: Vehicle;
   deleteVehicle?: boolean;
@@ -49,7 +49,7 @@ const VEHICLE_FIELDS = `
 
 const GET_VEHICLES_QUERY = `
   query GetVehicles {
-    getVehicles {
+    vehicles {
       ${VEHICLE_FIELDS}
     }
   }
@@ -57,7 +57,7 @@ const GET_VEHICLES_QUERY = `
 
 const GET_VEHICLE_QUERY = `
   query GetVehicle($id: ID!) {
-    getVehicle(id: $id) {
+    vehicle(id: $id) {
       ${VEHICLE_FIELDS}
     }
   }
@@ -65,7 +65,7 @@ const GET_VEHICLE_QUERY = `
 
 const GET_AVAILABLE_VEHICLES_QUERY = `
   query GetAvailableVehicles {
-    getAvailableVehicles {
+    availableVehicles {
       ${VEHICLE_FIELDS}
     }
   }
@@ -89,12 +89,12 @@ const UPDATE_VEHICLE_MUTATION = `
 
 export async function getVehicles(): Promise<Vehicle[]> {
   const response = await requestGraphQL<VehiclesQueryResponse>(GET_VEHICLES_QUERY);
-  return unwrapResult(response.getVehicles ?? []);
+  return unwrapResult(response.vehicles ?? []);
 }
 
 export async function getVehicleById(id: string): Promise<Vehicle> {
   const response = await requestGraphQL<VehiclesQueryResponse, { id: string }>(GET_VEHICLE_QUERY, { id });
-  return unwrapResult(response.getVehicle);
+  return unwrapResult(response.vehicle);
 }
 
 export async function createVehicle(data: CreateVehicleRequest): Promise<Vehicle> {
@@ -115,5 +115,5 @@ export async function updateVehicle(id: string, data: UpdateVehicleRequest): Pro
 
 export async function getAvailableVehicles(): Promise<Vehicle[]> {
   const response = await requestGraphQL<VehiclesQueryResponse>(GET_AVAILABLE_VEHICLES_QUERY);
-  return unwrapResult(response.getAvailableVehicles ?? []);
+  return unwrapResult(response.availableVehicles ?? []);
 }

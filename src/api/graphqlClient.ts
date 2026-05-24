@@ -71,6 +71,20 @@ function clearAuth(): void {
   localStorage.removeItem('user');
 }
 
+function normalizeUser(user: AuthResponseLike['user']): AuthResponseLike['user'] {
+  if (!user || typeof user !== 'object') return user;
+
+  const firstName = typeof user.firstName === 'string' ? user.firstName : '';
+  const lastName = typeof user.lastName === 'string' ? user.lastName : '';
+  const userName = typeof user.userName === 'string' ? user.userName : '';
+  const name = `${firstName} ${lastName}`.trim() || userName || null;
+
+  return {
+    ...user,
+    name,
+  };
+}
+
 function redirectToLogin(): void {
   if (typeof window === 'undefined') return;
   window.location.href = '/login';
@@ -160,7 +174,7 @@ async function refreshAccessToken(): Promise<string | null> {
       localStorage.setItem('refreshToken', data.refresh.refreshToken);
     }
     if (typeof window !== 'undefined' && data.refresh?.user) {
-      localStorage.setItem('user', JSON.stringify(data.refresh.user));
+      localStorage.setItem('user', JSON.stringify(normalizeUser(data.refresh.user)));
     }
 
     return token;

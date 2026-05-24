@@ -93,21 +93,29 @@ type PackageInternalHistoryGraphQL = {
 };
 
 type PackageQueryResponse = {
-  getPackages?: PagedResponse<PackageListItemGraphQL>;
-  getPackage?: PackageDetailGraphQL | null;
+  packages?: {
+    items: PackageListItemGraphQL[];
+    totalCount: number;
+    pageNumber: number;
+    pageSize: number;
+    totalPages: number;
+    hasNextPage?: boolean;
+    hasPreviousPage?: boolean;
+  };
+  package?: PackageDetailGraphQL | null;
   createPackage?: PackageDetailGraphQL;
   updatePackage?: PackageDetailGraphQL;
   deliverPackage?: PackageDetailGraphQL;
   cancelPackage?: PackageDetailGraphQL;
   movePackageToDepot?: boolean;
-  getPackageByTracking?: PackagePublicHistoryGraphQL | null;
-  getPackageHistory?: PackageInternalHistoryGraphQL[];
+  packageByTracking?: PackagePublicHistoryGraphQL | null;
+  packageHistory?: PackageInternalHistoryGraphQL[];
   markPackageAsDelivered?: boolean;
   markPackageAsCollected?: boolean;
   markPackageAttemptFailed?: boolean;
   collectPackage?: boolean;
-  getPackageForScannerByTracking?: ScannerPackage | null;
-  getPackageForScanner?: ScannerPackage | null;
+  packageForScannerByTracking?: ScannerPackage | null;
+  packageForScanner?: ScannerPackage | null;
 };
 
 function mapPackage(packageDto: PackageListItemGraphQL | PackageDetailGraphQL): Package {
@@ -204,20 +212,23 @@ const PACKAGE_INTERNAL_HISTORY_FIELDS = `
 
 const GET_PACKAGES_QUERY = `
   query GetPackages($page: Int!, $pageSize: Int!) {
-    getPackages(page: $page, pageSize: $pageSize) {
+    packages(page: $page, pageSize: $pageSize) {
       items {
         ${PACKAGE_LIST_FIELDS}
       }
-      total
-      page
+      totalCount
+      pageNumber
       pageSize
+      totalPages
+      hasNextPage
+      hasPreviousPage
     }
   }
 `;
 
 const GET_PACKAGE_QUERY = `
   query GetPackage($id: ID!) {
-    getPackage(id: $id) {
+    package(id: $id) {
       ${PACKAGE_DETAIL_FIELDS}
     }
   }
@@ -263,7 +274,7 @@ const MOVE_PACKAGE_TO_DEPOT_MUTATION = `
 
 const PACKAGE_BY_TRACKING_QUERY = `
   query GetPackageByTracking($trackingNumber: String!) {
-    getPackageByTracking(trackingNumber: $trackingNumber) {
+    packageByTracking(trackingNumber: $trackingNumber) {
       ${PACKAGE_PUBLIC_HISTORY_FIELDS}
     }
   }
@@ -271,7 +282,7 @@ const PACKAGE_BY_TRACKING_QUERY = `
 
 const PACKAGE_HISTORY_QUERY = `
   query GetPackageHistory($id: ID!) {
-    getPackageHistory(id: $id) {
+    packageHistory(id: $id) {
       ${PACKAGE_INTERNAL_HISTORY_FIELDS}
     }
   }
@@ -279,7 +290,7 @@ const PACKAGE_HISTORY_QUERY = `
 
 const PACKAGE_FOR_SCANNER_BY_TRACKING_QUERY = `
   query GetPackageForScannerByTracking($trackingNumber: String!) {
-    getPackageForScannerByTracking(trackingNumber: $trackingNumber) {
+    packageForScannerByTracking(trackingNumber: $trackingNumber) {
       ${PACKAGE_SCANNER_FIELDS}
     }
   }
@@ -287,7 +298,7 @@ const PACKAGE_FOR_SCANNER_BY_TRACKING_QUERY = `
 
 const PACKAGE_FOR_SCANNER_QUERY = `
   query GetPackageForScanner($id: ID!) {
-    getPackageForScanner(id: $id) {
+    packageForScanner(id: $id) {
       ${PACKAGE_SCANNER_FIELDS}
     }
   }
@@ -319,16 +330,18 @@ const MARK_ATTEMPT_FAILED_MUTATION = `
 
 export async function getPackages(page = 1, pageSize = 20): Promise<PagedResponse<Package>> {
   const response = await requestGraphQL<PackageQueryResponse, { page: number; pageSize: number }>(GET_PACKAGES_QUERY, { page, pageSize });
-  const result = unwrapResult(response.getPackages ?? { items: [], total: 0, page, pageSize });
+  const result = unwrapResult(response.packages ?? { items: [], totalCount: 0, pageNumber: page, pageSize, totalPages: 0 });
   return {
-    ...result,
     items: result.items.map((item) => mapPackage(item)),
+    total: result.totalCount,
+    page: result.pageNumber,
+    pageSize: result.pageSize,
   };
 }
 
 export async function getPackageById(id: string): Promise<Package> {
   const response = await requestGraphQL<PackageQueryResponse, { id: string }>(GET_PACKAGE_QUERY, { id });
-  return mapPackage(unwrapResult(response.getPackage));
+  return mapPackage(unwrapResult(response.package));
 }
 
 export async function createPackage(payload: CreatePackageDto): Promise<Package> {
@@ -358,7 +371,7 @@ export async function movePackageToDepot(id: string): Promise<boolean> {
 
 export async function getPackageByTracking(trackingNumber: string): Promise<PackagePublicHistoryDto | null> {
   const response = await requestGraphQL<PackageQueryResponse, { trackingNumber: string }>(PACKAGE_BY_TRACKING_QUERY, { trackingNumber }, { authenticated: false });
-  const result = unwrapResult(response.getPackageByTracking);
+  const result = unwrapResult(response.packageByTracking);
   return {
     trackingNumber: result.trackingNumber,
     events: (result.history ?? []).map((entry) => ({
@@ -370,7 +383,7 @@ export async function getPackageByTracking(trackingNumber: string): Promise<Pack
 
 export async function getPackageHistory(id: string): Promise<PackageInternalHistoryDto[]> {
   const response = await requestGraphQL<PackageQueryResponse, { id: string }>(PACKAGE_HISTORY_QUERY, { id });
-  return unwrapResult(response.getPackageHistory ?? []);
+  return unwrapResult(response.packageHistory ?? []);
 }
 
 export async function markPackageAsDelivered(
@@ -422,10 +435,10 @@ export async function getPackageForScannerByTracking(trackingNumber: string): Pr
     { trackingNumber },
   );
 
-  return unwrapResult(response.getPackageForScannerByTracking);
+  return unwrapResult(response.packageForScannerByTracking);
 }
 
 export async function getPackageForScanner(id: string): Promise<ScannerPackage | null> {
   const response = await requestGraphQL<PackageQueryResponse, { id: string }>(PACKAGE_FOR_SCANNER_QUERY, { id });
-  return unwrapResult(response.getPackageForScanner);
+  return unwrapResult(response.packageForScanner);
 }

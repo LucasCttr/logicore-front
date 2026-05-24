@@ -1,9 +1,15 @@
 export type UserDto = {
   id: string;
+  userName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
   email?: string | null;
-  name?: string | null;
+  emailConfirmed?: boolean;
+  isActive?: boolean;
   roles?: string[];
-  [key: string]: any;
+  createdAt?: string;
+  name?: string | null;
+  [key: string]: unknown;
 };
 
 export type RegisterUserDto = {

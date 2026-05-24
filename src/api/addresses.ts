@@ -1,13 +1,13 @@
 import { requestGraphQL, unwrapResult } from './graphqlClient';
 
 type AddressQueryResponse = {
-  getAddressSuggestions?: string[];
+  addressSuggestions?: string[];
   recordSelectedAddress?: boolean;
 };
 
 const ADDRESS_SUGGESTIONS_QUERY = `
   query GetAddressSuggestions($q: String!) {
-    getAddressSuggestions(q: $q)
+    addressSuggestions(q: $q)
   }
 `;
 
@@ -19,7 +19,7 @@ const RECORD_SELECTED_ADDRESS_MUTATION = `
 
 export async function getAddressSuggestions(query: string): Promise<string[]> {
   const response = await requestGraphQL<AddressQueryResponse, { q: string }>(ADDRESS_SUGGESTIONS_QUERY, { q: query });
-  return unwrapResult(response.getAddressSuggestions ?? []);
+  return unwrapResult(response.addressSuggestions ?? []);
 }
 
 export async function recordSelectedAddress(address: string): Promise<boolean> {

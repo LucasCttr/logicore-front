@@ -2,8 +2,8 @@ import type { CreateUserDto, PagedUserResult, UpdateUserDto, User } from '../typ
 import { requestGraphQL, unwrapResult } from './graphqlClient';
 
 type UsersQueryResponse = {
-  getUsers?: PagedUserResult;
-  getUser?: User | null;
+  users?: PagedUserResult;
+  user?: User | null;
   createUser?: User;
   updateUser?: User;
   toggleUserStatus?: boolean;
@@ -23,7 +23,7 @@ const USER_FIELDS = `
 
 const USERS_QUERY = `
   query GetUsers($page: Int!, $pageSize: Int!) {
-    getUsers(page: $page, pageSize: $pageSize) {
+    users(page: $page, pageSize: $pageSize) {
       items {
         ${USER_FIELDS}
       }
@@ -36,7 +36,7 @@ const USERS_QUERY = `
 
 const USER_QUERY = `
   query GetUser($id: ID!) {
-    getUser(id: $id) {
+    user(id: $id) {
       ${USER_FIELDS}
     }
   }
@@ -70,12 +70,12 @@ export const getUsersAPI = async (page = 1, limit = 15): Promise<PagedUserResult
     { page, pageSize: limit },
   );
 
-  return unwrapResult(response.getUsers);
+  return unwrapResult(response.users);
 };
 
 export const getUserByIdAPI = async (id: string): Promise<User> => {
   const response = await requestGraphQL<UsersQueryResponse, { id: string }>(USER_QUERY, { id });
-  return unwrapResult(response.getUser);
+  return unwrapResult(response.user);
 };
 
 export const createUserAPI = async (data: CreateUserDto): Promise<User> => {

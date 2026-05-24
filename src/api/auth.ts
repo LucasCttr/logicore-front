@@ -11,9 +11,25 @@ type AuthMutationResponse = {
 const AUTH_USER_FIELDS = `
   id
   email
-  name
+  userName
+  firstName
+  lastName
+  emailConfirmed
+  isActive
   roles
+  createdAt
 `;
+
+function normalizeUser(user: UserDto | null | undefined): UserDto | undefined {
+  if (!user) return undefined;
+
+  const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+
+  return {
+    ...user,
+    name: displayName || user.userName || null,
+  };
+}
 
 const REGISTER_MUTATION = `
   mutation Register($firstName: String!, $lastName: String!, $email: String!, $password: String!) {
@@ -42,7 +58,7 @@ export async function register(payload: RegisterUserDto): Promise<UserDto> {
     { authenticated: false },
   );
 
-  return unwrapResult(response.register);
+  return unwrapResult(normalizeUser(response.register));
 }
 
 export async function login(payload: LoginUserDto): Promise<AuthResponseDto> {
@@ -52,7 +68,12 @@ export async function login(payload: LoginUserDto): Promise<AuthResponseDto> {
     { authenticated: false },
   );
 
-  return unwrapResult(response.login);
+  const authResponse = unwrapResult(response.login);
+
+  return {
+    ...authResponse,
+    user: normalizeUser(authResponse.user) as UserDto,
+  };
 }
 
 export async function refresh(): Promise<AuthResponseDto> {
@@ -72,7 +93,12 @@ export async function refresh(): Promise<AuthResponseDto> {
     { authenticated: false },
   );
 
-  return unwrapResult(response.refresh);
+  const authResponse = unwrapResult(response.refresh);
+
+  return {
+    ...authResponse,
+    user: normalizeUser(authResponse.user) as UserDto,
+  };
 }
 
 const authApi = { register, login, refresh };

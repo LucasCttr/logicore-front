@@ -3,9 +3,12 @@ import { requestGraphQL, unwrapResult } from './graphqlClient';
 import { normalizeShipment } from './shipmentMappers';
 
 type ShipmentQueryResponse = {
-  getShipments?: PagedResultDto<Shipment>;
-  getMyShipments?: Shipment[];
-  getShipment?: Shipment | null;
+  shipments?: {
+    items: Shipment[];
+    total: number;
+  };
+  myShipments?: Shipment[];
+  shipment?: Shipment | null;
   createShipment?: Shipment;
   startShipment?: boolean;
   addPackageToShipment?: Shipment;
@@ -40,20 +43,18 @@ const SHIPMENT_FIELDS = `
 
 const GET_SHIPMENTS_QUERY = `
   query GetShipments($page: Int!, $pageSize: Int!, $sortBy: String, $sortDir: String, $status: String, $q: String) {
-    getShipments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDir: $sortDir, status: $status, q: $q) {
+    shipments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDir: $sortDir, status: $status, q: $q) {
       items {
         ${SHIPMENT_FIELDS}
       }
       total
-      page
-      pageSize
     }
   }
 `;
 
 const GET_MY_SHIPMENTS_QUERY = `
   query GetMyShipments {
-    getMyShipments {
+    myShipments {
       ${SHIPMENT_FIELDS}
     }
   }
@@ -61,7 +62,7 @@ const GET_MY_SHIPMENTS_QUERY = `
 
 const GET_SHIPMENT_QUERY = `
   query GetShipment($id: ID!) {
-    getShipment(id: $id) {
+    shipment(id: $id) {
       ${SHIPMENT_FIELDS}
     }
   }
@@ -151,21 +152,23 @@ export async function getShipments(
     { page, pageSize, sortBy, sortDir, status, q },
   );
 
-  const result = unwrapResult(response.getShipments ?? { items: [], total: 0, page, pageSize });
+  const result = unwrapResult(response.shipments ?? { items: [], total: 0, page, pageSize });
   return {
     ...result,
     items: result.items.map((item) => normalizeShipment(item)),
+    page,
+    pageSize,
   };
 }
 
 export async function getMyShipments(): Promise<Shipment[]> {
   const response = await requestGraphQL<ShipmentQueryResponse>(GET_MY_SHIPMENTS_QUERY);
-  return unwrapResult(response.getMyShipments ?? []).map((item) => normalizeShipment(item));
+  return unwrapResult(response.myShipments ?? []).map((item) => normalizeShipment(item));
 }
 
 export async function getShipmentById(id: string): Promise<Shipment> {
   const response = await requestGraphQL<ShipmentQueryResponse, { id: string }>(GET_SHIPMENT_QUERY, { id });
-  return normalizeShipment(unwrapResult(response.getShipment));
+  return normalizeShipment(unwrapResult(response.shipment));
 }
 
 export async function addPackageToShipment(id: string, payload: { packageId: string }): Promise<Shipment> {
