@@ -95,21 +95,31 @@ function isAuthStatus(status: number): boolean {
   return status === 401 || status === 403;
 }
 
+function isAuthErrorCode(code?: string): boolean {
+  return code === 'AUTH_NOT_AUTHORIZED' || code === 'UNAUTHENTICATED';
+}
+
+function hasAuthGraphQLError(errors?: GraphQLErrorLike[]): boolean {
+  return errors?.some((error) => isAuthErrorCode(error.extensions?.code)) ?? false;
+}
+
 function isAuthMessage(message: string): boolean {
   return /unauthorized|forbidden|missing refresh token|invalid refresh token|token is expired|signature validation failed|invalid token|session expired/i.test(message);
 }
 
 function shouldRefreshOnError(error: GraphQLRequestError): boolean {
-  return error.status === 401 || error.status === 403 || isAuthMessage(error.message);
+  return error.status === 401 || error.status === 403 || hasAuthGraphQLError(error.errors) || isAuthMessage(error.message);
 }
 
 export class GraphQLRequestError extends Error {
   status: number;
+  errors?: GraphQLErrorLike[];
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, errors?: GraphQLErrorLike[]) {
     super(message);
     this.name = 'GraphQLRequestError';
     this.status = status;
+    this.errors = errors;
   }
 }
 
@@ -147,13 +157,13 @@ async function performRequest<TData, TVariables>(
 
   if (!response.ok) {
     const message = payload?.errors?.[0]?.message || `Request failed with status ${response.status}`;
-    throw new GraphQLRequestError(message, response.status);
+    throw new GraphQLRequestError(message, response.status, payload?.errors);
   }
 
   if (payload?.errors?.length) {
     const message = payload.errors[0]?.message || 'Request failed';
-    const status = isAuthMessage(message) ? 401 : 400;
-    throw new GraphQLRequestError(message, status);
+    const status = hasAuthGraphQLError(payload.errors) || isAuthMessage(message) ? 401 : 400;
+    throw new GraphQLRequestError(message, status, payload.errors);
   }
 
   if (!payload || payload.data === undefined) {
