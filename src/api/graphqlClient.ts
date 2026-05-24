@@ -68,6 +68,7 @@ function storeAuthToken(token: string | null): void {
 function clearAuth(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
 }
 
@@ -95,7 +96,11 @@ function isAuthStatus(status: number): boolean {
 }
 
 function isAuthMessage(message: string): boolean {
-  return /unauthorized|forbidden|missing refresh token|invalid refresh token/i.test(message);
+  return /unauthorized|forbidden|missing refresh token|invalid refresh token|token is expired|signature validation failed|invalid token|session expired/i.test(message);
+}
+
+function shouldRefreshOnError(error: GraphQLRequestError): boolean {
+  return error.status === 401 || error.status === 403 || isAuthMessage(error.message);
 }
 
 export class GraphQLRequestError extends Error {
@@ -199,7 +204,7 @@ export async function requestGraphQL<TData, TVariables = Record<string, unknown>
       throw requestError;
     }
 
-    if (requestError.status === 401) {
+    if (shouldRefreshOnError(requestError)) {
       try {
         const refreshedToken = await refreshAccessToken();
         if (!refreshedToken) {
