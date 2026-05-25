@@ -1,3 +1,6 @@
+import { print, type DocumentNode } from 'graphql';
+import { gql } from 'graphql-tag';
+
 type GraphQLErrorLike = {
   message?: string;
   extensions?: {
@@ -24,15 +27,20 @@ type AuthResponseLike = {
 const defaultApiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5074';
 const graphQLEndpoint = process.env.NEXT_PUBLIC_GRAPHQL_URL || `${defaultApiBase.replace(/\/$/, '')}/graphql`;
 
-const REFRESH_MUTATION = `
+export const REFRESH_MUTATION = gql`
   mutation Refresh {
     refresh {
       token
       user {
         id
         email
-        name
+        userName
+        firstName
+        lastName
+        emailConfirmed
+        isActive
         roles
+        createdAt
       }
     }
   }
@@ -100,7 +108,7 @@ function isAuthMessage(message: string): boolean {
 }
 
 function shouldRefreshOnError(error: GraphQLRequestError): boolean {
-  return error.status === 401 || error.status === 403 || hasAuthGraphQLError(error.errors) || isAuthMessage(error.message);
+  return error.status === 401 || hasAuthGraphQLError(error.errors) || isAuthMessage(error.message);
 }
 
 export class GraphQLRequestError extends Error {
@@ -116,7 +124,7 @@ export class GraphQLRequestError extends Error {
 }
 
 async function performRequest<TData, TVariables>(
-  query: string,
+  query: string | DocumentNode,
   variables?: TVariables,
   options: GraphQLClientOptions = {},
 ): Promise<TData> {
@@ -133,7 +141,7 @@ async function performRequest<TData, TVariables>(
     method: 'POST',
     credentials: 'include',
     headers,
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify({ query: typeof query === 'string' ? query : print(query), variables }),
   });
 
   if (isAuthStatus(response.status)) {
@@ -169,7 +177,7 @@ async function refreshAccessToken(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
-    const data = await performRequest<{ refresh: AuthResponseLike }>(REFRESH_MUTATION, undefined, { authenticated: false });
+    const data = await performRequest<{ refresh: AuthResponseLike }, undefined>(REFRESH_MUTATION, undefined, { authenticated: false });
 
     const token = data.refresh?.token ?? null;
     if (token) storeAuthToken(token);
@@ -186,7 +194,7 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 export async function requestGraphQL<TData, TVariables = Record<string, unknown>>(
-  query: string,
+  query: string | DocumentNode,
   variables?: TVariables,
   options: GraphQLClientOptions = {},
 ): Promise<TData> {
@@ -196,6 +204,12 @@ export async function requestGraphQL<TData, TVariables = Record<string, unknown>
     const requestError = error instanceof GraphQLRequestError ? error : new GraphQLRequestError('Request failed', 500);
 
     if (options.authenticated === false) {
+      throw requestError;
+    }
+
+    if (requestError.status === 403) {
+      clearAuth();
+      redirectToLogin();
       throw requestError;
     }
 
@@ -214,11 +228,6 @@ export async function requestGraphQL<TData, TVariables = Record<string, unknown>
         redirectToLogin();
         throw refreshError;
       }
-    }
-
-    if (requestError.status === 403) {
-      clearAuth();
-      redirectToLogin();
     }
 
     throw requestError;

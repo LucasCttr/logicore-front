@@ -1,3 +1,21 @@
+import { gql } from 'graphql-tag';
+import type {
+  AssignVehicleToDriverMutation,
+  AssignVehicleToDriverMutationVariables,
+  GetAvailableDriversQuery,
+  GetDriverDetailsQuery,
+  GetDriverDetailsQueryVariables,
+  GetDriverQuery,
+  GetDriverQueryVariables,
+  GetDriversQuery,
+  GetMyDriverProfileQuery,
+  RegisterDriverMutation,
+  RegisterDriverMutationVariables,
+  UpdateDriverMutation,
+  UpdateDriverMutationVariables,
+  UpdateDriverStatusMutation,
+  UpdateDriverStatusMutationVariables,
+} from './__generated__/graphql-types';
 import type { Driver, RegisterDriverDto, UpdateDriverStatusDto } from '../types/drivers';
 import { requestGraphQL, unwrapResult } from './graphqlClient';
 
@@ -21,64 +39,74 @@ type DriverDetailsWithUser = {
   updatedAt?: string | null;
 };
 
-type DriversQueryResponse = {
-  drivers?: Driver[];
-  driver?: Driver | null;
-  availableDrivers?: Driver[];
-  driverDetails?: {
-    items: DriverDetailsWithUser[];
-    total: number;
-    page: number;
-    pageSize: number;
+function normalizeDriver(driver: { email?: string | null; name?: string | null; [key: string]: unknown }): Driver {
+  return {
+    ...(driver as Driver),
+    name: (driver.name as string | null | undefined) ?? driver.email ?? '',
   };
-  myDriverProfile?: Driver | null;
-  registerDriver?: Driver;
-  updateDriver?: Driver;
-  updateDriverStatus?: Driver;
-  assignVehicleToDriver?: Driver;
-};
+}
 
-const DRIVER_FIELDS = `
-  id
-  name
-  phone
-  licenseNumber
-  isActive
-  applicationUserId
-  assignedVehicleId
-  assignedVehicle {
-    id
-    licensePlate
-    make
-    model
-  }
-`;
-
-const GET_DRIVERS_QUERY = `
+const GET_DRIVERS_QUERY = gql`
   query GetDrivers {
     drivers {
-      ${DRIVER_FIELDS}
+      id
+      email
+      phone
+      licenseNumber
+      isActive
+      applicationUserId
+      assignedVehicleId
+      assignedVehicle {
+        id
+        licensePlate
+        make
+        model
+      }
     }
   }
 `;
 
-const GET_DRIVER_QUERY = `
-  query GetDriver($id: ID!) {
+const GET_DRIVER_QUERY = gql`
+  query GetDriver($id: UUID!) {
     driver(id: $id) {
-      ${DRIVER_FIELDS}
+      id
+      email
+      phone
+      licenseNumber
+      isActive
+      applicationUserId
+      assignedVehicleId
+      assignedVehicle {
+        id
+        licensePlate
+        make
+        model
+      }
     }
   }
 `;
 
-const GET_AVAILABLE_DRIVERS_QUERY = `
+const GET_AVAILABLE_DRIVERS_QUERY = gql`
   query GetAvailableDrivers {
     availableDrivers {
-      ${DRIVER_FIELDS}
+      id
+      email
+      phone
+      licenseNumber
+      isActive
+      applicationUserId
+      assignedVehicleId
+      assignedVehicle {
+        id
+        licensePlate
+        make
+        model
+      }
     }
   }
 `;
 
-const GET_DRIVER_DETAILS_QUERY = `
+const GET_DRIVER_DETAILS_QUERY = gql`
   query GetDriverDetails($page: Int!, $pageSize: Int!, $search: String, $isActive: Boolean) {
     driverDetails(page: $page, pageSize: $pageSize, search: $search, isActive: $isActive) {
       items {
@@ -107,10 +135,16 @@ const GET_DRIVER_DETAILS_QUERY = `
   }
 `;
 
-const GET_MY_DRIVER_PROFILE_QUERY = `
+const GET_MY_DRIVER_PROFILE_QUERY = gql`
   query GetMyDriverProfile {
     myDriverProfile {
-      ${DRIVER_FIELDS}
+      id
+      email
+      phone
+      licenseNumber
+      isActive
+      applicationUserId
+      assignedVehicleId
       assignedVehicle {
         id
         licensePlate
@@ -121,51 +155,99 @@ const GET_MY_DRIVER_PROFILE_QUERY = `
   }
 `;
 
-const REGISTER_DRIVER_MUTATION = `
+const REGISTER_DRIVER_MUTATION = gql`
   mutation RegisterDriver($request: RegisterDriverCommandInput!) {
     registerDriver(request: $request) {
-      ${DRIVER_FIELDS}
+      id
+      email
+      phone
+      licenseNumber
+      isActive
+      applicationUserId
+      assignedVehicleId
+      assignedVehicle {
+        id
+        licensePlate
+        make
+        model
+      }
     }
   }
 `;
 
-const UPDATE_DRIVER_STATUS_MUTATION = `
-  mutation UpdateDriverStatus($id: ID!, $request: UpdateDriverStatusCommandInput!) {
+const UPDATE_DRIVER_STATUS_MUTATION = gql`
+  mutation UpdateDriverStatus($id: UUID!, $request: UpdateDriverStatusCommandInput!) {
     updateDriverStatus(id: $id, request: $request) {
-      ${DRIVER_FIELDS}
+      id
+      email
+      phone
+      licenseNumber
+      isActive
+      applicationUserId
+      assignedVehicleId
+      assignedVehicle {
+        id
+        licensePlate
+        make
+        model
+      }
     }
   }
 `;
 
-const ASSIGN_VEHICLE_MUTATION = `
-  mutation AssignVehicleToDriver($id: ID!, $vehicleId: ID) {
+const ASSIGN_VEHICLE_MUTATION = gql`
+  mutation AssignVehicleToDriver($id: UUID!, $vehicleId: UUID) {
     assignVehicleToDriver(id: $id, vehicleId: $vehicleId) {
-      ${DRIVER_FIELDS}
+      id
+      email
+      phone
+      licenseNumber
+      isActive
+      applicationUserId
+      assignedVehicleId
+      assignedVehicle {
+        id
+        licensePlate
+        make
+        model
+      }
     }
   }
 `;
 
-const UPDATE_DRIVER_MUTATION = `
-  mutation UpdateDriver($id: ID!, $request: UpdateDriverCommandInput!) {
+const UPDATE_DRIVER_MUTATION = gql`
+  mutation UpdateDriver($id: UUID!, $request: UpdateDriverCommandInput!) {
     updateDriver(id: $id, request: $request) {
-      ${DRIVER_FIELDS}
+      id
+      email
+      phone
+      licenseNumber
+      isActive
+      applicationUserId
+      assignedVehicleId
+      assignedVehicle {
+        id
+        licensePlate
+        make
+        model
+      }
     }
   }
 `;
 
 export async function getDrivers(): Promise<Driver[]> {
-  const response = await requestGraphQL<DriversQueryResponse>(GET_DRIVERS_QUERY);
-  return unwrapResult(response.drivers ?? []);
+  const response = await requestGraphQL<GetDriversQuery>(GET_DRIVERS_QUERY);
+  return unwrapResult(response.drivers ?? []).map((driver) => normalizeDriver(driver));
 }
 
 export async function getDriverById(id: string): Promise<Driver> {
-  const response = await requestGraphQL<DriversQueryResponse, { id: string }>(GET_DRIVER_QUERY, { id });
-  return unwrapResult(response.driver);
+  const response = await requestGraphQL<GetDriverQuery, GetDriverQueryVariables>(GET_DRIVER_QUERY, { id });
+  return normalizeDriver(unwrapResult(response.driver));
 }
 
 export async function getAvailableDrivers(): Promise<Driver[]> {
-  const response = await requestGraphQL<DriversQueryResponse>(GET_AVAILABLE_DRIVERS_QUERY);
-  return unwrapResult(response.availableDrivers ?? []);
+  const response = await requestGraphQL<GetAvailableDriversQuery>(GET_AVAILABLE_DRIVERS_QUERY);
+  return unwrapResult(response.availableDrivers ?? []).map((driver) => normalizeDriver(driver));
 }
 
 export async function getDriversWithDetails(
@@ -174,7 +256,7 @@ export async function getDriversWithDetails(
   search?: string,
   isActive?: boolean,
 ): Promise<{ items: DriverDetailsWithUser[]; total: number; page: number; pageSize: number }> {
-  const response = await requestGraphQL<DriversQueryResponse, { page: number; pageSize: number; search?: string; isActive?: boolean }>(
+  const response = await requestGraphQL<GetDriverDetailsQuery, GetDriverDetailsQueryVariables>(
     GET_DRIVER_DETAILS_QUERY,
     { page, pageSize, search, isActive },
   );
@@ -183,42 +265,42 @@ export async function getDriversWithDetails(
 }
 
 export async function getMyDriverProfile(): Promise<Driver> {
-  const response = await requestGraphQL<DriversQueryResponse>(GET_MY_DRIVER_PROFILE_QUERY);
-  return unwrapResult(response.myDriverProfile);
+  const response = await requestGraphQL<GetMyDriverProfileQuery>(GET_MY_DRIVER_PROFILE_QUERY);
+  return normalizeDriver(unwrapResult(response.myDriverProfile));
 }
 
 export async function registerDriver(payload: RegisterDriverDto): Promise<Driver> {
-  const response = await requestGraphQL<DriversQueryResponse, { request: RegisterDriverDto }>(
+  const response = await requestGraphQL<RegisterDriverMutation, RegisterDriverMutationVariables>(
     REGISTER_DRIVER_MUTATION,
     { request: payload },
   );
 
-  return unwrapResult(response.registerDriver);
+  return normalizeDriver(unwrapResult(response.registerDriver));
 }
 
 export async function updateDriverStatus(id: string, payload: UpdateDriverStatusDto): Promise<Driver> {
-  const response = await requestGraphQL<DriversQueryResponse, { id: string; request: UpdateDriverStatusDto }>(
+  const response = await requestGraphQL<UpdateDriverStatusMutation, UpdateDriverStatusMutationVariables>(
     UPDATE_DRIVER_STATUS_MUTATION,
     { id, request: payload },
   );
 
-  return unwrapResult(response.updateDriverStatus);
+  return normalizeDriver(unwrapResult(response.updateDriverStatus));
 }
 
 export async function assignVehicleToDriver(driverId: string, vehicleId: string | null): Promise<Driver> {
-  const response = await requestGraphQL<DriversQueryResponse, { id: string; vehicleId: string | null }>(
+  const response = await requestGraphQL<AssignVehicleToDriverMutation, AssignVehicleToDriverMutationVariables>(
     ASSIGN_VEHICLE_MUTATION,
     { id: driverId, vehicleId },
   );
 
-  return unwrapResult(response.assignVehicleToDriver);
+  return normalizeDriver(unwrapResult(response.assignVehicleToDriver));
 }
 
 export async function updateDriver(id: string, payload: { firstName: string; lastName: string; email: string; licenseNumber: string; phone: string }): Promise<Driver> {
-  const response = await requestGraphQL<DriversQueryResponse, { id: string; request: { firstName: string; lastName: string; email: string; licenseNumber: string; phone: string } }>(
+  const response = await requestGraphQL<UpdateDriverMutation, UpdateDriverMutationVariables>(
     UPDATE_DRIVER_MUTATION,
     { id, request: payload },
   );
 
-  return unwrapResult(response.updateDriver);
+  return normalizeDriver(unwrapResult(response.updateDriver));
 }

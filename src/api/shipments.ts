@@ -1,133 +1,205 @@
+import { gql } from 'graphql-tag';
+import type {
+  AddPackageToShipmentMutation,
+  AddPackageToShipmentMutationVariables,
+  ArriveShipmentMutation,
+  ArriveShipmentMutationVariables,
+  AssignDriverToShipmentMutation,
+  AssignDriverToShipmentMutationVariables,
+  CancelShipmentMutation,
+  CancelShipmentMutationVariables,
+  CompleteShipmentMutation,
+  CompleteShipmentMutationVariables,
+  CreateShipmentMutation,
+  CreateShipmentMutationVariables,
+  DispatchShipmentMutation,
+  DispatchShipmentMutationVariables,
+  FinalizeShipmentMutation,
+  FinalizeShipmentMutationVariables,
+  GetMyShipmentsQuery,
+  GetShipmentQuery,
+  GetShipmentQueryVariables,
+  GetShipmentsQuery,
+  GetShipmentsQueryVariables,
+  StartShipmentMutation,
+  StartShipmentMutationVariables,
+} from './__generated__/graphql-types';
 import Shipment, { AssignDriverDto, CreateShipmentDto, PagedResultDto } from '../types/shipments';
 import { requestGraphQL, unwrapResult } from './graphqlClient';
 import { normalizeShipment } from './shipmentMappers';
 
-type ShipmentQueryResponse = {
-  shipments?: {
-    items: Shipment[];
-    total: number;
-  };
-  myShipments?: Shipment[];
-  shipment?: Shipment | null;
-  createShipment?: Shipment;
-  startShipment?: boolean;
-  addPackageToShipment?: Shipment;
-  dispatchShipment?: boolean;
-  assignDriverToShipment?: boolean;
-  arriveShipment?: boolean;
-  completeShipment?: boolean;
-  finalizeShipment?: boolean;
-  cancelShipment?: boolean;
-};
-
-const SHIPMENT_FIELDS = `
-  id
-  routeCode
-  status
-  type
-  driverId
-  vehicleId
-  originLocationId
-  originLocationName
-  destinationLocationId
-  destinationLocationName
-  createdAt
-  estimatedDelivery
-  shippedAt
-  deliveredAt
-  arrivedAt
-  vehicleMaxWeightCapacity
-  vehicleMaxVolumeCapacity
-  packageIds
-`;
-
-const GET_SHIPMENTS_QUERY = `
+const GET_SHIPMENTS_QUERY = gql`
   query GetShipments($page: Int!, $pageSize: Int!, $sortBy: String, $sortDir: String, $status: String, $q: String) {
     shipments(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortDir: $sortDir, status: $status, q: $q) {
       items {
-        ${SHIPMENT_FIELDS}
+        id
+        routeCode
+        status
+        type
+        driverId
+        vehicleId
+        originLocationId
+        originLocationName
+        destinationLocationId
+        destinationLocationName
+        createdAt
+        estimatedDelivery
+        shippedAt
+        deliveredAt
+        arrivedAt
+        vehicleMaxWeightCapacity
+        vehicleMaxVolumeCapacity
+        packageIds
       }
       total
     }
   }
 `;
 
-const GET_MY_SHIPMENTS_QUERY = `
+const GET_MY_SHIPMENTS_QUERY = gql`
   query GetMyShipments {
     myShipments {
-      ${SHIPMENT_FIELDS}
+      id
+      routeCode
+      status
+      type
+      driverId
+      vehicleId
+      originLocationId
+      originLocationName
+      destinationLocationId
+      destinationLocationName
+      createdAt
+      estimatedDelivery
+      shippedAt
+      deliveredAt
+      arrivedAt
+      vehicleMaxWeightCapacity
+      vehicleMaxVolumeCapacity
+      packageIds
     }
   }
 `;
 
-const GET_SHIPMENT_QUERY = `
-  query GetShipment($id: ID!) {
+const GET_SHIPMENT_QUERY = gql`
+  query GetShipment($id: UUID!) {
     shipment(id: $id) {
-      ${SHIPMENT_FIELDS}
+      id
+      routeCode
+      status
+      type
+      driverId
+      vehicleId
+      originLocationId
+      originLocationName
+      destinationLocationId
+      destinationLocationName
+      createdAt
+      estimatedDelivery
+      shippedAt
+      deliveredAt
+      arrivedAt
+      vehicleMaxWeightCapacity
+      vehicleMaxVolumeCapacity
+      packageIds
     }
   }
 `;
 
-const CREATE_SHIPMENT_MUTATION = `
+const CREATE_SHIPMENT_MUTATION = gql`
   mutation CreateShipment($request: CreateShipmentCommandInput!) {
     createShipment(request: $request) {
-      ${SHIPMENT_FIELDS}
+      id
+      routeCode
+      status
+      type
+      driverId
+      vehicleId
+      originLocationId
+      originLocationName
+      destinationLocationId
+      destinationLocationName
+      createdAt
+      estimatedDelivery
+      shippedAt
+      deliveredAt
+      arrivedAt
+      vehicleMaxWeightCapacity
+      vehicleMaxVolumeCapacity
+      packageIds
     }
   }
 `;
 
-const START_MUTATION = `
-  mutation StartShipment($shipmentId: ID!) {
+const START_MUTATION = gql`
+  mutation StartShipment($shipmentId: UUID!) {
     startShipment(shipmentId: $shipmentId)
   }
 `;
 
-const ADD_PACKAGE_MUTATION = `
-  mutation AddPackageToShipment($shipmentId: ID!, $packageId: ID!) {
+const ADD_PACKAGE_MUTATION = gql`
+  mutation AddPackageToShipment($shipmentId: UUID!, $packageId: UUID!) {
     addPackageToShipment(shipmentId: $shipmentId, packageId: $packageId) {
-      ${SHIPMENT_FIELDS}
+      id
+      routeCode
+      status
+      type
+      driverId
+      vehicleId
+      originLocationId
+      originLocationName
+      destinationLocationId
+      destinationLocationName
+      createdAt
+      estimatedDelivery
+      shippedAt
+      deliveredAt
+      arrivedAt
+      vehicleMaxWeightCapacity
+      vehicleMaxVolumeCapacity
+      packageIds
     }
   }
 `;
 
-const DISPATCH_MUTATION = `
-  mutation DispatchShipment($shipmentId: ID!) {
+const DISPATCH_MUTATION = gql`
+  mutation DispatchShipment($shipmentId: UUID!) {
     dispatchShipment(shipmentId: $shipmentId)
   }
 `;
 
-const ASSIGN_DRIVER_MUTATION = `
-  mutation AssignDriverToShipment($shipmentId: ID!, $driverId: ID!) {
+const ASSIGN_DRIVER_MUTATION = gql`
+  mutation AssignDriverToShipment($shipmentId: UUID!, $driverId: UUID!) {
     assignDriverToShipment(shipmentId: $shipmentId, driverId: $driverId)
   }
 `;
 
-const ARRIVE_MUTATION = `
-  mutation ArriveShipment($shipmentId: ID!) {
+const ARRIVE_MUTATION = gql`
+  mutation ArriveShipment($shipmentId: UUID!) {
     arriveShipment(shipmentId: $shipmentId)
   }
 `;
 
-const COMPLETE_MUTATION = `
-  mutation CompleteShipment($shipmentId: ID!) {
+const COMPLETE_MUTATION = gql`
+  mutation CompleteShipment($shipmentId: UUID!) {
     completeShipment(shipmentId: $shipmentId)
   }
 `;
 
-const FINALIZE_MUTATION = `
-  mutation FinalizeShipment($shipmentId: ID!) {
+const FINALIZE_MUTATION = gql`
+  mutation FinalizeShipment($shipmentId: UUID!) {
     finalizeShipment(shipmentId: $shipmentId)
   }
 `;
 
-const CANCEL_MUTATION = `
-  mutation CancelShipment($shipmentId: ID!) {
+const CANCEL_MUTATION = gql`
+  mutation CancelShipment($shipmentId: UUID!) {
     cancelShipment(shipmentId: $shipmentId)
   }
 `;
 
 export async function createShipment(payload: CreateShipmentDto): Promise<Shipment> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { request: CreateShipmentDto }>(CREATE_SHIPMENT_MUTATION, {
+  const response = await requestGraphQL<CreateShipmentMutation, CreateShipmentMutationVariables>(CREATE_SHIPMENT_MUTATION, {
     request: payload,
   });
 
@@ -135,7 +207,7 @@ export async function createShipment(payload: CreateShipmentDto): Promise<Shipme
 }
 
 export async function startShipment(id: string): Promise<boolean> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { shipmentId: string }>(START_MUTATION, { shipmentId: id });
+  const response = await requestGraphQL<StartShipmentMutation, StartShipmentMutationVariables>(START_MUTATION, { shipmentId: id });
   return unwrapResult(response.startShipment);
 }
 
@@ -147,7 +219,7 @@ export async function getShipments(
   status?: string,
   q?: string,
 ): Promise<PagedResultDto<Shipment>> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { page: number; pageSize: number; sortBy?: string; sortDir?: string; status?: string; q?: string }>(
+  const response = await requestGraphQL<GetShipmentsQuery, GetShipmentsQueryVariables>(
     GET_SHIPMENTS_QUERY,
     { page, pageSize, sortBy, sortDir, status, q },
   );
@@ -162,17 +234,17 @@ export async function getShipments(
 }
 
 export async function getMyShipments(): Promise<Shipment[]> {
-  const response = await requestGraphQL<ShipmentQueryResponse>(GET_MY_SHIPMENTS_QUERY);
+  const response = await requestGraphQL<GetMyShipmentsQuery>(GET_MY_SHIPMENTS_QUERY);
   return unwrapResult(response.myShipments ?? []).map((item) => normalizeShipment(item));
 }
 
 export async function getShipmentById(id: string): Promise<Shipment> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { id: string }>(GET_SHIPMENT_QUERY, { id });
+  const response = await requestGraphQL<GetShipmentQuery, GetShipmentQueryVariables>(GET_SHIPMENT_QUERY, { id });
   return normalizeShipment(unwrapResult(response.shipment));
 }
 
 export async function addPackageToShipment(id: string, payload: { packageId: string }): Promise<Shipment> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { shipmentId: string; packageId: string }>(ADD_PACKAGE_MUTATION, {
+  const response = await requestGraphQL<AddPackageToShipmentMutation, AddPackageToShipmentMutationVariables>(ADD_PACKAGE_MUTATION, {
     shipmentId: id,
     packageId: payload.packageId,
   });
@@ -181,12 +253,12 @@ export async function addPackageToShipment(id: string, payload: { packageId: str
 }
 
 export async function dispatchShipment(id: string): Promise<boolean> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { shipmentId: string }>(DISPATCH_MUTATION, { shipmentId: id });
+  const response = await requestGraphQL<DispatchShipmentMutation, DispatchShipmentMutationVariables>(DISPATCH_MUTATION, { shipmentId: id });
   return unwrapResult(response.dispatchShipment);
 }
 
 export async function assignDriver(id: string, payload: AssignDriverDto): Promise<boolean> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { shipmentId: string; driverId: string }>(ASSIGN_DRIVER_MUTATION, {
+  const response = await requestGraphQL<AssignDriverToShipmentMutation, AssignDriverToShipmentMutationVariables>(ASSIGN_DRIVER_MUTATION, {
     shipmentId: id,
     driverId: payload.driverId,
   });
@@ -195,22 +267,22 @@ export async function assignDriver(id: string, payload: AssignDriverDto): Promis
 }
 
 export async function arriveShipment(id: string): Promise<boolean> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { shipmentId: string }>(ARRIVE_MUTATION, { shipmentId: id });
+  const response = await requestGraphQL<ArriveShipmentMutation, ArriveShipmentMutationVariables>(ARRIVE_MUTATION, { shipmentId: id });
   return unwrapResult(response.arriveShipment);
 }
 
 export async function completeShipment(id: string): Promise<boolean> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { shipmentId: string }>(COMPLETE_MUTATION, { shipmentId: id });
+  const response = await requestGraphQL<CompleteShipmentMutation, CompleteShipmentMutationVariables>(COMPLETE_MUTATION, { shipmentId: id });
   return unwrapResult(response.completeShipment);
 }
 
 export async function finalizeShipment(id: string): Promise<boolean> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { shipmentId: string }>(FINALIZE_MUTATION, { shipmentId: id });
+  const response = await requestGraphQL<FinalizeShipmentMutation, FinalizeShipmentMutationVariables>(FINALIZE_MUTATION, { shipmentId: id });
   return unwrapResult(response.finalizeShipment);
 }
 
 export async function cancelShipment(id: string): Promise<boolean> {
-  const response = await requestGraphQL<ShipmentQueryResponse, { shipmentId: string }>(CANCEL_MUTATION, { shipmentId: id });
+  const response = await requestGraphQL<CancelShipmentMutation, CancelShipmentMutationVariables>(CANCEL_MUTATION, { shipmentId: id });
   return unwrapResult(response.cancelShipment);
 }
 

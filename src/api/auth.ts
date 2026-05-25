@@ -1,24 +1,14 @@
+import { gql } from 'graphql-tag';
+import type {
+  LoginMutation,
+  LoginMutationVariables,
+  RefreshMutation,
+  RegisterMutation,
+  RegisterMutationVariables,
+} from './__generated__/graphql-types';
 import type UserDto from '../types/auth';
 import type { AuthResponseDto, LoginUserDto, RegisterUserDto } from '../types/auth';
-import { requestGraphQL, unwrapResult } from './graphqlClient';
-
-type AuthMutationResponse = {
-  register?: UserDto;
-  login?: AuthResponseDto;
-  refresh?: AuthResponseDto;
-};
-
-const AUTH_USER_FIELDS = `
-  id
-  email
-  userName
-  firstName
-  lastName
-  emailConfirmed
-  isActive
-  roles
-  createdAt
-`;
+import { REFRESH_MUTATION, requestGraphQL, unwrapResult } from './graphqlClient';
 
 function normalizeUser(user: UserDto | null | undefined): UserDto | undefined {
   if (!user) return undefined;
@@ -31,29 +21,48 @@ function normalizeUser(user: UserDto | null | undefined): UserDto | undefined {
   };
 }
 
-const REGISTER_MUTATION = `
+const REGISTER_MUTATION = gql`
   mutation Register($firstName: String!, $lastName: String!, $email: String!, $password: String!) {
     register(firstName: $firstName, lastName: $lastName, email: $email, password: $password) {
-      ${AUTH_USER_FIELDS}
+      id
+      email
+      userName
+      firstName
+      lastName
+      emailConfirmed
+      isActive
+      roles
+      createdAt
     }
   }
 `;
 
-const LOGIN_MUTATION = `
+const LOGIN_MUTATION = gql`
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password) {
       token
       user {
-        ${AUTH_USER_FIELDS}
+        id
+        email
+        userName
+        firstName
+        lastName
+        emailConfirmed
+        isActive
+        roles
+        createdAt
       }
     }
   }
 `;
 
 export async function register(payload: RegisterUserDto): Promise<UserDto> {
-  const response = await requestGraphQL<AuthMutationResponse, RegisterUserDto>(
+  const [firstName = '', ...rest] = (payload.name ?? '').trim().split(/\s+/);
+  const lastName = rest.join(' ');
+
+  const response = await requestGraphQL<RegisterMutation, RegisterMutationVariables>(
     REGISTER_MUTATION,
-    payload,
+    { firstName, lastName, email: payload.email, password: payload.password },
     { authenticated: false },
   );
 
@@ -61,7 +70,7 @@ export async function register(payload: RegisterUserDto): Promise<UserDto> {
 }
 
 export async function login(payload: LoginUserDto): Promise<AuthResponseDto> {
-  const response = await requestGraphQL<AuthMutationResponse, LoginUserDto>(
+  const response = await requestGraphQL<LoginMutation, LoginMutationVariables>(
     LOGIN_MUTATION,
     payload,
     { authenticated: false },
@@ -76,20 +85,7 @@ export async function login(payload: LoginUserDto): Promise<AuthResponseDto> {
 }
 
 export async function refresh(): Promise<AuthResponseDto> {
-  const response = await requestGraphQL<AuthMutationResponse>(
-    `
-      mutation Refresh {
-        refresh {
-          token
-          user {
-            ${AUTH_USER_FIELDS}
-          }
-        }
-      }
-    `,
-    undefined,
-    { authenticated: false },
-  );
+  const response = await requestGraphQL<RefreshMutation>(REFRESH_MUTATION, undefined, { authenticated: false });
 
   const authResponse = unwrapResult(response.refresh);
 

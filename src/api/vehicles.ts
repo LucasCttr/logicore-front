@@ -1,3 +1,5 @@
+import { gql } from 'graphql-tag';
+import type { CreateVehicleMutation, CreateVehicleMutationVariables, GetAvailableVehiclesQuery, GetVehicleQuery, GetVehicleQueryVariables, GetVehiclesQuery, UpdateVehicleMutation, UpdateVehicleMutationVariables } from './__generated__/graphql-types';
 import { requestGraphQL, unwrapResult } from './graphqlClient';
 
 export type Vehicle = {
@@ -27,78 +29,88 @@ export type UpdateVehicleRequest = {
   isActive: boolean;
 };
 
-type VehiclesQueryResponse = {
-  vehicles?: Vehicle[];
-  vehicle?: Vehicle | null;
-  availableVehicles?: Vehicle[];
-  createVehicle?: Vehicle;
-  updateVehicle?: Vehicle;
-  deleteVehicle?: boolean;
-  updateVehicleStatus?: Vehicle;
-};
-
-const VEHICLE_FIELDS = `
-  id
-  licensePlate
-  make
-  model
-  maxWeightCapacity
-  maxVolumeCapacity
-  isActive
-`;
-
-const GET_VEHICLES_QUERY = `
+const GET_VEHICLES_QUERY = gql`
   query GetVehicles {
     vehicles {
-      ${VEHICLE_FIELDS}
+      id
+      licensePlate
+      make
+      model
+      maxWeightCapacity
+      maxVolumeCapacity
+      isActive
     }
   }
 `;
 
-const GET_VEHICLE_QUERY = `
-  query GetVehicle($id: ID!) {
+const GET_VEHICLE_QUERY = gql`
+  query GetVehicle($id: UUID!) {
     vehicle(id: $id) {
-      ${VEHICLE_FIELDS}
+      id
+      licensePlate
+      make
+      model
+      maxWeightCapacity
+      maxVolumeCapacity
+      isActive
     }
   }
 `;
 
-const GET_AVAILABLE_VEHICLES_QUERY = `
+const GET_AVAILABLE_VEHICLES_QUERY = gql`
   query GetAvailableVehicles {
     availableVehicles {
-      ${VEHICLE_FIELDS}
+      id
+      licensePlate
+      make
+      model
+      maxWeightCapacity
+      maxVolumeCapacity
+      isActive
     }
   }
 `;
 
-const CREATE_VEHICLE_MUTATION = `
+const CREATE_VEHICLE_MUTATION = gql`
   mutation CreateVehicle($request: CreateVehicleDtoInput!) {
     createVehicle(request: $request) {
-      ${VEHICLE_FIELDS}
+      id
+      licensePlate
+      make
+      model
+      maxWeightCapacity
+      maxVolumeCapacity
+      isActive
     }
   }
 `;
 
-const UPDATE_VEHICLE_MUTATION = `
-  mutation UpdateVehicle($id: ID!, $request: UpdateVehicleDtoInput!) {
+const UPDATE_VEHICLE_MUTATION = gql`
+  mutation UpdateVehicle($id: UUID!, $request: UpdateVehicleDtoInput!) {
     updateVehicle(id: $id, request: $request) {
-      ${VEHICLE_FIELDS}
+      id
+      licensePlate
+      make
+      model
+      maxWeightCapacity
+      maxVolumeCapacity
+      isActive
     }
   }
 `;
 
 export async function getVehicles(): Promise<Vehicle[]> {
-  const response = await requestGraphQL<VehiclesQueryResponse>(GET_VEHICLES_QUERY);
+  const response = await requestGraphQL<GetVehiclesQuery>(GET_VEHICLES_QUERY);
   return unwrapResult(response.vehicles ?? []);
 }
 
 export async function getVehicleById(id: string): Promise<Vehicle> {
-  const response = await requestGraphQL<VehiclesQueryResponse, { id: string }>(GET_VEHICLE_QUERY, { id });
+  const response = await requestGraphQL<GetVehicleQuery, GetVehicleQueryVariables>(GET_VEHICLE_QUERY, { id });
   return unwrapResult(response.vehicle);
 }
 
 export async function createVehicle(data: CreateVehicleRequest): Promise<Vehicle> {
-  const response = await requestGraphQL<VehiclesQueryResponse, { request: CreateVehicleRequest }>(
+  const response = await requestGraphQL<CreateVehicleMutation, CreateVehicleMutationVariables>(
     CREATE_VEHICLE_MUTATION,
     { request: data },
   );
@@ -106,7 +118,7 @@ export async function createVehicle(data: CreateVehicleRequest): Promise<Vehicle
 }
 
 export async function updateVehicle(id: string, data: UpdateVehicleRequest): Promise<Vehicle> {
-  const response = await requestGraphQL<VehiclesQueryResponse, { id: string; request: UpdateVehicleRequest }>(
+  const response = await requestGraphQL<UpdateVehicleMutation, UpdateVehicleMutationVariables>(
     UPDATE_VEHICLE_MUTATION,
     { id, request: data },
   );
@@ -114,6 +126,6 @@ export async function updateVehicle(id: string, data: UpdateVehicleRequest): Pro
 }
 
 export async function getAvailableVehicles(): Promise<Vehicle[]> {
-  const response = await requestGraphQL<VehiclesQueryResponse>(GET_AVAILABLE_VEHICLES_QUERY);
+  const response = await requestGraphQL<GetAvailableVehiclesQuery>(GET_AVAILABLE_VEHICLES_QUERY);
   return unwrapResult(response.availableVehicles ?? []);
 }
