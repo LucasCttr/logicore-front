@@ -12,7 +12,6 @@
 - [Proximos Pasos](#proximos-pasos)
 
 ## Descripcion
-> ⚠️ Proyecto con capa de API basada en GraphQL, con autenticación y refresh de sesión integrados.
 - **Proposito**: Interfaz web moderna para la plataforma LogiCore, como complemento visual del backend. Proyecto de aprendizaje en Next.js con buenas practicas de frontend.
 - **Que hace**: Provee una UI por roles para gestionar conductores, vehiculos, ubicaciones, paquetes y envios, con formularios reactivos, validacion de entradas y consumo de la [LogiCore API](https://github.com/LucasCttr/logicore-back) a traves de GraphQL.
   - **Interfaz Admin**: CRUD completo para conductores, vehiculos, ubicaciones, paquetes, envios, usuarios y dashboard.
@@ -37,7 +36,6 @@
 - **Validacion**: `Zod` + `React Hook Form`
 - **Cliente de datos**: `GraphQL` con apoyo de `Axios` para refresh de sesion
 - **Estado**: `React Hooks` (useState, useContext)
-- **Linting**: `ESLint`
 
 ## Librerias y Herramientas Principales
 - **Next.js**: Framework React con SSR, SSG, rutas y optimizaciones automaticas.
@@ -47,7 +45,6 @@
 - **Axios**: Soporte para refresh de sesion y manejo de autorizacion cuando hace falta.
 - **React Hook Form**: Manejo eficiente de formularios reactivos.
 - **Zod**: Validacion de esquemas en compilacion y runtime.
-- **ESLint**: Analisis estatico de codigo para mantener calidad y consistencia.
 
 ## Estructura del Repositorio (Resumen)
 - **src/app/**: Rutas de la aplicacion, layout raiz y paginas principales (drivers, locations, packages, shipments, vehicles).
